@@ -21,8 +21,8 @@ LON_GRID_SERIES = "lon_discrete"
 
 CENTER = [51.0606959, 3.7070895]
 
-HEADER = ["sat", "satValid", "hdopVal", "hdopValid", "lat", "lon", "locValid", "age", "ageValid", "alt",
-          "altValid", "course", "courseValid", "speed", "speedValid", "rssi", "snr", "freqError", "tp", "sf", "isPacket"]
+HEADER = ["time", "sat", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal", "lat", "lon", "locValid", "age", "ageValid", "alt",
+          "altValid", "course", "courseValid", "speed", "speedValid", "rssi", "snr", "freqError",  "sf", "isPacket"]
 
 currentDir = os.path.dirname(os.path.abspath(__file__))
 data_file = os.path.abspath(os.path.join(currentDir, '..', 'data', "PACKETS.TXT"))
@@ -37,14 +37,17 @@ util.addDistanceTo(for_map, CENTER)
 util.addPathLoss(for_map)
 
 
+
+
+for_map = for_map[for_map.sat > 0]
+for_map = for_map[for_map.ageValid > 0]
+for_map = for_map[for_map.hdopVal < 75]
+for_map = for_map[for_map.locValid > 0]
+for_map = for_map[for_map.ageValid > 0]
+
 for_map_gps = for_map.copy()
 
-for_map_gps = for_map_gps[for_map_gps.sat > 0]
-for_map_gps = for_map_gps[for_map_gps.ageValid > 0]
-for_map_gps = for_map_gps[for_map_gps.hdopVal < 75]
-
 for_map = for_map[for_map.isPacket > 0]
-for_map = for_map[for_map.locValid > 0]
 
 
 for_map[SNR_SERIES] = util.normalize(data=for_map[SNR_SERIES])
@@ -91,7 +94,7 @@ print(for_map)
 for idx, row in for_map.iterrows():
     row_idx = int(row[LAT_GRID_SERIES])
     col_idx = int(row[LON_GRID_SERIES])
-    colors[row_idx][col_idx] += row[RSS_SERIES]
+    colors[row_idx][col_idx] += row[SNR_SERIES]
     num_values[row_idx][col_idx] += 1
     transparant_matrix[row_idx][col_idx] = 1
 

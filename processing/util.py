@@ -84,7 +84,7 @@ def get_geojson_grid(upper_right, lower_left, colors, mask_matrix, n=100):
     return all_boxes
 
 
-def addPathLoss(df: pd.DataFrame, gain=0):
+def addPathLoss(df: pd.DataFrame, tp=20, gain=0):
     """
     Calculate the path loss in dB.
 
@@ -96,7 +96,7 @@ def addPathLoss(df: pd.DataFrame, gain=0):
     Default 0
 
     """
-    df["pl_db"] = df.tp - df.rssi - gain
+    df["pl_db"] = tp - df.rssi - gain
 
 
 def addDistanceTo(df: pd.DataFrame, origin):
