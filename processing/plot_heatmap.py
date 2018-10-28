@@ -2,6 +2,7 @@ import json
 import math
 import os
 
+import branca.colormap as cm
 import folium
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -9,10 +10,8 @@ import numpy as np
 import pandas as pd
 from folium.map import Marker
 from folium.plugins import HeatMap, MarkerCluster
-import branca.colormap as cm
 
 import util as util
-
 
 PLOT_SNR = True
 PLOT_RSS = not PLOT_SNR
@@ -43,32 +42,21 @@ grid_size = 25
 for_map = pd.read_csv(data_file, sep=',', header=None,
                       names=HEADER)
 
-
-util.addDistanceTo(for_map, CENTER)
-util.addPathLoss(for_map)
-
-
-#for_map.plot.scatter(x='distance', y = 'pl_db')
-
+for_map = util.sort(for_map)
 print(for_map)
-
-for_map = for_map[for_map.sat > 0]
-for_map = for_map[for_map.ageValid > 0]
-for_map = for_map[for_map.hdopVal < 75]
-for_map = for_map[for_map.locValid > 0]
-for_map = for_map[for_map.ageValid > 0]
-for_map = for_map[for_map.rssi < 20]
 
 for_map_gps = for_map.copy()
 
 for_map = for_map[for_map.isPacket > 0]
 
+
+util.addDistanceTo(for_map, CENTER)
+util.addPathLoss(for_map)
+
 print(for_map)
 
-
-#for_map[SNR_SERIES] = util.normalize(data=for_map[SNR_SERIES])
-# for_map[RSS_SERIES] = util.normalize(
-#    data=for_map[RSS_SERIES], min_val=-130, max_val=-50)
+for_map.plot.scatter(x='distance', y='pl_db', c='sf',  colormap='viridis')
+plt.show()
 
 
 max_lat = for_map[LAT_SERIES].max()
@@ -111,7 +99,6 @@ for_map[LAT_GRID_SERIES] = util.normalize(
 for_map[LON_GRID_SERIES] = util.normalize(
     data=for_map[LON_SERIES], num_bins=grid_size)
 
-print(for_map)
 colors = np.zeros((grid_size, grid_size))
 num_values = np.zeros((grid_size, grid_size))
 transparant_matrix = np.zeros((grid_size, grid_size))
@@ -127,14 +114,8 @@ for idx, row in for_map.iterrows():
 colors = colors/num_values
 colors = np.nan_to_num(colors)
 
-print(colors)
-
-
 grid = util.get_geojson_grid(
     upper_right, lower_left, colors, transparant_matrix, grid_size)
-
-
-# feature["properties"]["color"],
 
 for i, geo_json in enumerate(grid):
     gj = folium.GeoJson(geo_json,
@@ -149,8 +130,6 @@ for i, geo_json in enumerate(grid):
     hmap.add_child(gj)
 
 folium.PolyLine(list(zip(for_map_gps.lat.values, for_map_gps.lon.values)),
-                color="red", weight=2, opacity=0.55).add_to(hmap)
+                color="red", weight=2, opacity=0.4).add_to(hmap)
 
-
-# hmap.add_child(hm_wide)
 hmap.save(output_file)

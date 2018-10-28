@@ -74,7 +74,7 @@ def get_geojson_grid(upper_right, lower_left, colors, mask_matrix, n=100):
                 "properties": {
                     "show": mask_matrix[row_idx][col_idx],
                     "color": color,
-                    "val" : norm(colors[row_idx][col_idx])
+                    "val": norm(colors[row_idx][col_idx])
                 }
             }
 
@@ -127,6 +127,17 @@ def addDistanceTo(df: pd.DataFrame, origin):
 
     df['distance'] = d
     # TODO add altitude as well ?
+
+
+def sort(data):
+    data = data[data.sat > 0]
+    data = data[data.ageValid > 0]
+    data = data[data.hdopVal < 75]
+    data = data[data.locValid > 0]
+    data = data[data.ageValid > 0]
+    data = data[data.rssi < 20]
+
+    return data
 
 
 def normalize(data, min_val=None, max_val=None, num_bins=None):
