@@ -73,7 +73,8 @@ def get_geojson_grid(upper_right, lower_left, colors, mask_matrix, n=100):
                 },
                 "properties": {
                     "show": mask_matrix[row_idx][col_idx],
-                    "color": color
+                    "color": color,
+                    "val" : norm(colors[row_idx][col_idx])
                 }
             }
 
