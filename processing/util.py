@@ -71,6 +71,8 @@ def get_geojson_grid(df, n, plot_snr):
         num_values[row_idx][col_idx] += 1
         transparant_matrix[row_idx][col_idx] = 1
 
+    # values == 0 -> = 1 in order to not divide by 
+    num_values[num_values < 1 ] = 1
     colors = colors/num_values
     colors = np.nan_to_num(colors)
 
@@ -134,7 +136,7 @@ def get_geojson_grid(df, n, plot_snr):
             geo_json["features"].append(grid_feature)
             all_boxes.append(geo_json)
 
-    colormap = cm.linear.YlOrRd_04.scale(
+    colormap = cm.linear.viridis.scale(
         df[values_to_plot_id].min(), df[values_to_plot_id].max())
     colormap.caption = caption
     return all_boxes, colormap
@@ -166,7 +168,7 @@ def addDistanceTo(df: pd.DataFrame, origin):
     df : pd.DataFrame
     """
 
-    radius = 6371  # km
+    radius = 6371*1000  # m
 
     dlat = np.radians(df.lat - lat)
     dlon = np.radians(df.lon - lon)
@@ -175,7 +177,7 @@ def addDistanceTo(df: pd.DataFrame, origin):
          np.cos(np.radians(lat)) * np.cos(np.radians(df.lat)) *
          np.sin(dlon / 2) * np.sin(dlon / 2))
     c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
-    d = (radius * c)*1000
+    d = (radius * c)
 
     df['distance'] = d
     # TODO add altitude as well ?
