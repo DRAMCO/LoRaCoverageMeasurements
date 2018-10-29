@@ -53,12 +53,12 @@
 #define SD_CS                     4
 
 #define GPS_WRITE_UPDATE_INTERVAL 1000
-#define SETTING_CHANGE_INTERVAL   20000
 #define MAX_TRANSMISSIONCASE      3
 #define DELIMETER                 ','
 #define GPS_BAUD                  9600
 #define MAX_SETTINGS              3
 #define RANDOM_PIN                A3
+
 
 float FREQ = 869.525;
 
@@ -80,6 +80,7 @@ SX1278 lora = new Module(6, 2, 3);
 File myFile;
 
 const uint8_t SPREADING_FACTORS[] = {7, 9, 12};
+const uint16_t WINDOW_TIME_PER_SF[] = {3000, 6000, 24000}; //3 * X interval for each SF
 uint8_t current_spreading_factor_id = 0;
 
 // The TinyGPS++ object
@@ -258,7 +259,7 @@ void loop() {
 
   checkRx();
 
-  if (currentTime - lastSettingsChanged > SETTING_CHANGE_INTERVAL) {
+  if (currentTime - lastSettingsChanged > WINDOW_TIME_PER_SF[current_spreading_factor_id]) {
     hopToDifferentSF();
     lastSettingsChanged = millis();
     myFile.flush(); 
