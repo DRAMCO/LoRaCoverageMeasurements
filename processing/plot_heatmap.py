@@ -42,7 +42,7 @@ LON_SERIES = "lon"
 LAT_GRID_SERIES = "lat_discrete"
 LON_GRID_SERIES = "lon_discrete"
 
-CENTER = [51.0606959, 3.7070895]
+CENTER = [51.0602666, 3.7079671]
 
 HEADER = ["time", "sat", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal", "lat", "lon", "locValid", "age", "ageValid", "alt","altValid", "course", "courseValid", "speed", "speedValid", "rssi", "snr", "freqError",  "sf", "isPacket"]
 
@@ -51,12 +51,12 @@ HEADER = ["time", "sat", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal
 
 currentDir = os.path.dirname(os.path.abspath(__file__))
 data_file = os.path.abspath(os.path.join(
-    currentDir, '..', 'data', "196203"))
+    currentDir, '..', 'data', "all"))
 output_file_name = "heatmap_SNR.html" if PLOT_SNR else "heatmap_RSS.html"
 output_file = os.path.abspath(os.path.join(
     currentDir, '..', 'result', output_file_name))
 
-grid_size = 100
+grid_size = 50
 
 for_map = pd.read_csv(data_file, sep=',', header=None,
                       names=HEADER)
@@ -65,6 +65,8 @@ for_map = util.sort(for_map)
 for_map['time'] = pd.to_datetime(
     for_map['time'], format='%m/%d/%Y %H:%M:%S ', utc=True)
 print(for_map)
+
+for_map.sort_values(by='time')
 
 for_map_gps = for_map.copy()
 
