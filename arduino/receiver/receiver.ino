@@ -45,14 +45,18 @@
 #include <SD.h>
 
 #define POWER_ENABLE_PIN          8
+#define GPS_RX_PIN                7
+// Try Analog pin 3 instead of D10 to use deek robot SD shield
+#define GPS_TX_PIN                10
+#define CAN_WE_WRITE_PIN          A1
+// This can become D10 again if GPS_TX_PIN can become A3
+#define SD_CS                     4
+
 #define GPS_WRITE_UPDATE_INTERVAL 1000
 #define SETTING_CHANGE_INTERVAL   20000
 #define MAX_TRANSMISSIONCASE      3
 #define DELIMETER                 ','
-#define GPS_RX_PIN                7
-#define GPS_TX_PIN                10
 #define GPS_BAUD                  9600
-#define CAN_WE_WRITE_PIN          A1
 #define MAX_SETTINGS              3
 #define RANDOM_PIN                A3
 
@@ -74,7 +78,6 @@ float FREQ = 869.525;
 SX1278 lora = new Module(6, 2, 3);
 
 File myFile;
-
 
 const uint8_t SPREADING_FACTORS[] = {7, 9, 12};
 uint8_t current_spreading_factor_id = 0;
@@ -116,8 +119,6 @@ uint32_t lastSettingsChanged;
 
 volatile bool receivedFlag = false;
 
-
-
 void blink() {
   if (myFile) {
     myFile.close();
@@ -136,6 +137,7 @@ void setup() {
   pinMode(A0, OUTPUT);
   digitalWrite(A0, LOW);
 
+  // Indicate whether it is safe to write to the SD card (prevent SD failure)
   pinMode(CAN_WE_WRITE_PIN, INPUT);
   pinMode(RANDOM_PIN, INPUT);
   checkCanWrite();
@@ -148,11 +150,12 @@ void setup() {
   pinMode(POWER_ENABLE_PIN, OUTPUT);
   digitalWrite(POWER_ENABLE_PIN, HIGH);
 
+  // Initialize RFM95 LoRa module
   initLoRa();
 
-  //debug(F("Initializing SD card..."));
-  if (!SD.begin(4)) {
-   //debug(F("initialization SD failed!"));
+  // debug(F("Initializing SD card..."));
+  if (!SD.begin(SD_CS)) {
+   // debug(F("initialization SD failed!"));
     blink();
   } else {
     String s = "";
@@ -271,6 +274,7 @@ void loop() {
 }
 
 void checkRx() {
+  // Check if LoRa packet is received
   if (receivedFlag) {
     digitalWrite(A0, HIGH);
     receivePacket();
@@ -303,8 +307,7 @@ bool receivePacket() {
 
 }
 
-// This custom version of delay() ensures that the gps object
-// is being "fed".
+// This custom version of delay() ensures that the gps object is being "fed".
 static void smartDelay(unsigned long ms)
 {
   unsigned long start = millis();
@@ -314,9 +317,6 @@ static void smartDelay(unsigned long ms)
       gps.encode(ss.read());
   } while (millis() - start < ms && !receivedFlag);
 }
-
-
-
 
 void receiveGPS() {
   smartDelay(1000);
@@ -342,9 +342,6 @@ void receiveGPS() {
   vdopVal = String(vdop.value()).toFloat();
 
 }
-
-
-
 
 void checkCanWrite() {
   if (analogRead(CAN_WE_WRITE_PIN) > 25) {
