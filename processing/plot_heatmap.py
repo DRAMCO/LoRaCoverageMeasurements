@@ -1,8 +1,27 @@
+"""
+    ____  ____      _    __  __  ____ ___
+   |  _ \|  _ \    / \  |  \/  |/ ___/ _ \
+   | | | | |_) |  / _ \ | |\/| | |  | | | |
+   | |_| |  _ <  / ___ \| |  | | |__| |_| |
+   |____/|_| \_\/_/   \_\_|  |_|\____\___/
+                             research group
+                               dramco.be/
+
+    KU Leuven - Technology Campus Gent,
+    Gebroeders De Smetstraat 1,
+    B-9000 Gent, Belgium
+
+           File: plt_heatmap.py
+        Created: 2018-10-26
+         Author: Gilles Callebaut
+        Version: 1.0
+    Description:
+"""
+
 import json
 import math
 import os
 
-import branca.colormap as cm
 import folium
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -51,7 +70,7 @@ for_map = for_map[for_map.isPacket > 0]
 
 
 util.addDistanceTo(for_map, CENTER)
-util.addPathLoss(for_map)
+util.addPathLossTo(for_map)
 
 print(for_map)
 
@@ -65,25 +84,9 @@ max_lon = for_map[LON_SERIES].max()
 min_lat = for_map[LAT_SERIES].min()
 min_lon = for_map[LON_SERIES].min()
 
-upper_right = [max_lat, max_lon]
-lower_left = [min_lat, min_lon]
-center = [lower_left[0]+(upper_right[0]-lower_left[0]) /
-          2, lower_left[1]+(upper_right[1]-lower_left[1])/2]
-
 
 hmap = folium.Map(location=CENTER, zoom_start=18, )  # tiles="Stamen Toner")
 
-if PLOT_SNR:
-    values_to_plot_id = SNR_SERIES
-    caption = 'snr'
-else:
-    values_to_plot_id = RSS_SERIES
-    caption = 'rss'
-
-colormap = cm.linear.YlOrRd_04.scale(
-    for_map[values_to_plot_id].min(), for_map[values_to_plot_id].max())
-colormap.caption = caption
-hmap.add_child(colormap)
 
 folium.Circle(
     radius=1,
@@ -94,28 +97,9 @@ folium.Circle(
 ).add_to(hmap)
 
 
-for_map[LAT_GRID_SERIES] = util.normalize(
-    data=for_map[LAT_SERIES], num_bins=grid_size)
-for_map[LON_GRID_SERIES] = util.normalize(
-    data=for_map[LON_SERIES], num_bins=grid_size)
-
-colors = np.zeros((grid_size, grid_size))
-num_values = np.zeros((grid_size, grid_size))
-transparant_matrix = np.zeros((grid_size, grid_size))
-
-print(for_map)
-for idx, row in for_map.iterrows():
-    row_idx = int(row[LAT_GRID_SERIES])
-    col_idx = int(row[LON_GRID_SERIES])
-    colors[row_idx][col_idx] += row[values_to_plot_id]
-    num_values[row_idx][col_idx] += 1
-    transparant_matrix[row_idx][col_idx] = 1
-
-colors = colors/num_values
-colors = np.nan_to_num(colors)
-
-grid = util.get_geojson_grid(
-    upper_right, lower_left, colors, transparant_matrix, grid_size)
+grid, colormap = util.get_geojson_grid(
+    for_map, grid_size, PLOT_SNR)
+hmap.add_child(colormap)
 
 for i, geo_json in enumerate(grid):
     gj = folium.GeoJson(geo_json,
