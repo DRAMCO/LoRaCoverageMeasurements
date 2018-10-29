@@ -32,7 +32,7 @@ from folium.plugins import HeatMap, MarkerCluster
 
 import util as util
 
-PLOT_SNR = True
+PLOT_SNR = False
 PLOT_RSS = not PLOT_SNR
 
 RSS_SERIES = "rssi"
@@ -44,24 +44,26 @@ LON_GRID_SERIES = "lon_discrete"
 
 CENTER = [51.0606959, 3.7070895]
 
-#HEADER = ["time", "sat", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal", "lat", "lon", "locValid", "age", "ageValid", "alt","altValid", "course", "courseValid", "speed", "speedValid", "rssi", "snr", "freqError",  "sf", "isPacket"]
+HEADER = ["time", "sat", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal", "lat", "lon", "locValid", "age", "ageValid", "alt","altValid", "course", "courseValid", "speed", "speedValid", "rssi", "snr", "freqError",  "sf", "isPacket"]
 
-HEADER = ["time", "sat", "satValid", "hdopVal", "hdopValid", "lat", "lon", "locValid", "age", "ageValid", "alt",
-          "altValid", "course", "courseValid", "speed", "speedValid", "rssi", "snr", "freqError",  "sf", "isPacket"]
+#HEADER = ["time", "sat", "satValid", "hdopVal", "hdopValid", "lat", "lon", "locValid", "age", "ageValid", "alt",
+#         "altValid", "course", "courseValid", "speed", "speedValid", "rssi", "snr", "freqError",  "sf", "isPacket"]
 
 currentDir = os.path.dirname(os.path.abspath(__file__))
 data_file = os.path.abspath(os.path.join(
-    currentDir, '..', 'data', "PACKETS.TXT"))
+    currentDir, '..', 'data', "196203"))
 output_file_name = "heatmap_SNR.html" if PLOT_SNR else "heatmap_RSS.html"
 output_file = os.path.abspath(os.path.join(
     currentDir, '..', 'result', output_file_name))
 
-grid_size = 25
+grid_size = 100
 
 for_map = pd.read_csv(data_file, sep=',', header=None,
                       names=HEADER)
 
 for_map = util.sort(for_map)
+for_map['time'] = pd.to_datetime(
+    for_map['time'], format='%m/%d/%Y %H:%M:%S ', utc=True)
 print(for_map)
 
 for_map_gps = for_map.copy()
@@ -78,14 +80,7 @@ for_map.plot.scatter(x='distance', y='pl_db', c='sf',  colormap='viridis')
 plt.show()
 
 
-max_lat = for_map[LAT_SERIES].max()
-max_lon = for_map[LON_SERIES].max()
-
-min_lat = for_map[LAT_SERIES].min()
-min_lon = for_map[LON_SERIES].min()
-
-
-hmap = folium.Map(location=CENTER, zoom_start=18, )  # tiles="Stamen Toner")
+hmap = folium.Map(location=CENTER, zoom_start=18, ) #  tiles="Stamen Toner")
 
 
 folium.Circle(

@@ -186,10 +186,14 @@ def addDistanceTo(df: pd.DataFrame, origin):
 def sort(data):
     data = data[data.sat > 0]
     data = data[data.ageValid > 0]
-    data = data[data.hdopVal < 75]
+    data = data[data.hdopVal < 3]
+    data = data[data.vdopVal < 3]
+    data = data[data.pdopVal < 3]
     data = data[data.locValid > 0]
     data = data[data.ageValid > 0]
     data = data[data.rssi < 20]
+
+    data = data[(data.sf == 12)  | (data.sf == 9) | (data.sf == 7)] 
 
     return data
 
