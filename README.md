@@ -1,5 +1,7 @@
 # LoRaCoverageMeasurements
 
+[Example heatmap](http://dramco.be/Measurements/LoRaCoverage/demo.html)
+
 ## Folder structure
 ```
 ├───arduino
@@ -9,7 +11,7 @@
 │   ├───receiver
 │   │         Specific source code (Arduino) for the receiver
 │   └───transmitter
-│   │         Specific source code (Arduino) for the trasnmitter
+│             Specific source code (Arduino) for the trasnmitter
 ├───data
 │     Measurement data
 ├───processing
