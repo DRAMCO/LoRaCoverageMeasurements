@@ -251,6 +251,7 @@ void loop() {
   if (currentTime - lastSettingsChanged > SETTING_CHANGE_INTERVAL) {
     hopToDifferentSF();
     lastSettingsChanged = millis();
+    myFile.flush(); 
   }
 
   checkRx();
