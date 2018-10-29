@@ -54,6 +54,7 @@
 #define GPS_BAUD                  9600
 #define CAN_WE_WRITE_PIN          A1
 #define MAX_SETTINGS              3
+#define RANDOM_PIN                A3
 
 float FREQ = 869.525;
 
@@ -123,9 +124,9 @@ void blink() {
   }
   while (1) {
     digitalWrite(A0, HIGH);
-    delay(500);
+    delay(200);
     digitalWrite(A0, LOW);
-    delay(500);
+    delay(200);
   }
 }
 
@@ -136,6 +137,7 @@ void setup() {
   digitalWrite(A0, LOW);
 
   pinMode(CAN_WE_WRITE_PIN, INPUT);
+  pinMode(RANDOM_PIN, INPUT);
   checkCanWrite();
   Serial.begin(9600);
 
@@ -149,11 +151,16 @@ void setup() {
   initLoRa();
 
   //debug(F("Initializing SD card..."));
-  if (!SD.begin(10)) {
+  if (!SD.begin(4)) {
    //debug(F("initialization SD failed!"));
     blink();
   } else {
-    myFile = SD.open("PACKETS.txt", FILE_WRITE);
+    String s = "";
+    s.concat(analogRead(RANDOM_PIN));
+    delay(10);
+    s.concat(analogRead(RANDOM_PIN));
+    Serial.println(s);
+    myFile = SD.open(s, FILE_WRITE);
   }
   //debug(F("initialization SD done."));
 
