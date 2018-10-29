@@ -1,12 +1,34 @@
+"""
+    ____  ____      _    __  __  ____ ___
+   |  _ \|  _ \    / \  |  \/  |/ ___/ _ \
+   | | | | |_) |  / _ \ | |\/| | |  | | | |
+   | |_| |  _ <  / ___ \| |  | | |__| |_| |
+   |____/|_| \_\/_/   \_\_|  |_|\____\___/
+                             research group
+                               dramco.be/
+
+    KU Leuven - Technology Campus Gent,
+    Gebroeders De Smetstraat 1,
+    B-9000 Gent, Belgium
+
+           File: util.py
+        Created: 2018-10-26
+         Author: Gilles Callebaut
+        Version: 1.0
+    Description:
+"""
+
+
 import math
 
+import branca.colormap as cm
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 
-def get_geojson_grid(upper_right, lower_left, colors, mask_matrix, n=100):
+def get_geojson_grid(df, n, plot_snr):
     """Returns a grid of geojson rectangles, and computes the exposure in each section of the grid based on the vessel data.
 
     Parameters
@@ -24,8 +46,46 @@ def get_geojson_grid(upper_right, lower_left, colors, mask_matrix, n=100):
     -------
 
     list
-        List of "geojson style" dictionary objects   
+        List of "geojson style" dictionary objects
     """
+    if plot_snr:
+        values_to_plot_id = 'snr'
+        caption = 'snr'
+    else:
+        values_to_plot_id = 'rssi'
+        caption = 'rss'
+    df['lat_discreteat'] = normalize(
+        data=df['lat'], num_bins=n)
+
+    df['lon_discrete'] = normalize(
+        data=df['lon'], num_bins=n)
+
+    colors = np.zeros((n, n))
+    num_values = np.zeros((n, n))
+    transparant_matrix = np.zeros((n, n))
+
+    for idx, row in df.iterrows():
+        row_idx = int(row['lat_discreteat'])
+        col_idx = int(row['lon_discrete'])
+        colors[row_idx][col_idx] += row[values_to_plot_id]
+        num_values[row_idx][col_idx] += 1
+        transparant_matrix[row_idx][col_idx] = 1
+
+    # values == 0 -> = 1 in order to not divide by 
+    num_values[num_values < 1 ] = 1
+    colors = colors/num_values
+    colors = np.nan_to_num(colors)
+
+    max_lat = df['lat'].max()
+    max_lon = df['lon'].max()
+
+    min_lat = df['lat'].min()
+    min_lon = df['lon'].min()
+
+    upper_right = [max_lat, max_lon]
+    lower_left = [min_lat, min_lon]
+    center = [lower_left[0]+(upper_right[0]-lower_left[0]) /
+              2, lower_left[1]+(upper_right[1]-lower_left[1])/2]
 
     all_boxes = []
 
@@ -45,7 +105,6 @@ def get_geojson_grid(upper_right, lower_left, colors, mask_matrix, n=100):
             upper_right = [lon + lon_stride, lat + lat_stride]
             lower_right = [lon + lon_stride, lat]
             lower_left = [lon, lat]
-
             # Define json coordinates for polygon
             coordinates = [
                 upper_left,
@@ -54,17 +113,14 @@ def get_geojson_grid(upper_right, lower_left, colors, mask_matrix, n=100):
                 lower_left,
                 upper_left
             ]
-
             color = cmap(norm(colors[row_idx][col_idx]))
             color = mpl.colors.to_hex(color)
-
             geo_json = {"type": "FeatureCollection",
                         "properties": {
                             "lower_left": lower_left,
                             "upper_right": upper_right
                         },
                         "features": []}
-
             grid_feature = {
                 "type": "Feature",
                 "geometry": {
@@ -72,29 +128,28 @@ def get_geojson_grid(upper_right, lower_left, colors, mask_matrix, n=100):
                     "coordinates": [coordinates],
                 },
                 "properties": {
-                    "show": mask_matrix[row_idx][col_idx],
-                    "color": color
+                    "show": transparant_matrix[row_idx][col_idx],
+                    "color": color,
+                    "val": norm(colors[row_idx][col_idx])
                 }
             }
-
             geo_json["features"].append(grid_feature)
-
             all_boxes.append(geo_json)
 
-    return all_boxes
+    colormap = cm.linear.viridis.scale(
+        df[values_to_plot_id].min(), df[values_to_plot_id].max())
+    colormap.caption = caption
+    return all_boxes, colormap
 
 
-def addPathLoss(df: pd.DataFrame, tp=20, gain=0):
+def addPathLossTo(df: pd.DataFrame, tp=20, gain=0):
     """
     Calculate the path loss in dB.
-
     Parameters
     ----------
     df : pd.DataFrame containinng the tp and rssi values
-
     gain: float antenna gain in dB
     Default 0
-
     """
     df["pl_db"] = tp - df.rssi - gain
 
@@ -113,7 +168,7 @@ def addDistanceTo(df: pd.DataFrame, origin):
     df : pd.DataFrame
     """
 
-    radius = 6371  # km
+    radius = 6371*1000  # m
 
     dlat = np.radians(df.lat - lat)
     dlon = np.radians(df.lon - lon)
@@ -122,10 +177,21 @@ def addDistanceTo(df: pd.DataFrame, origin):
          np.cos(np.radians(lat)) * np.cos(np.radians(df.lat)) *
          np.sin(dlon / 2) * np.sin(dlon / 2))
     c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
-    d = (radius * c)*1000
+    d = (radius * c)
 
     df['distance'] = d
     # TODO add altitude as well ?
+
+
+def sort(data):
+    data = data[data.sat > 0]
+    data = data[data.ageValid > 0]
+    data = data[data.hdopVal < 75]
+    data = data[data.locValid > 0]
+    data = data[data.ageValid > 0]
+    data = data[data.rssi < 20]
+
+    return data
 
 
 def normalize(data, min_val=None, max_val=None, num_bins=None):
