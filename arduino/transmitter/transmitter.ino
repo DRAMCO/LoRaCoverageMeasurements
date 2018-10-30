@@ -28,7 +28,7 @@
 
 
 
-#define SPREADING_FACTOR               12
+#define SPREADING_FACTOR               9
 
 
 

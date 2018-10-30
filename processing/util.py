@@ -52,7 +52,7 @@ def get_geojson_grid(df, n, plot_snr):
         values_to_plot_id = 'snr'
         caption = 'snr'
     else:
-        values_to_plot_id = 'rssi'
+        values_to_plot_id = 'rss'
         caption = 'rss'
     df['lat_discreteat'] = normalize(
         data=df['lat'], num_bins=n)
@@ -151,8 +151,9 @@ def addPathLossTo(df: pd.DataFrame, tp=20, gain=0):
     gain: float antenna gain in dB
     Default 0
     """
-    df["pl_db"] = tp - df.rssi - gain
 
+    # correction term according to https://www.semtech.com/uploads/documents/DS_SX1276-7-8-9_W_APP_V5.pdf p87
+    df["pl_db"] = tp + gain - (df.rss)
 
 def addDistanceTo(df: pd.DataFrame, origin):
     lat = origin[0]
@@ -186,14 +187,22 @@ def addDistanceTo(df: pd.DataFrame, origin):
 def sort(data):
     data = data[data.sat > 0]
     data = data[data.ageValid > 0]
-    data = data[data.hdopVal < 50]
-    data = data[data.vdopVal < 50]
-    data = data[data.pdopVal < 50]
+    data = data[data.hdopVal < 5]
+    data = data[data.vdopVal < 5]
+    data = data[data.pdopVal < 5]
     data = data[data.locValid > 0]
     data = data[data.ageValid > 0]
-    data = data[data.rssi < 20]
+    
 
     data = data[(data.sf == 12)  | (data.sf == 9) | (data.sf == 7)] 
+
+
+    snr_correction = data.snr.copy()  
+
+    snr_correction[snr_correction > 0] = 0
+    data["rss"] = data.rssi + snr_correction*0.25
+
+    data = data[data.rss < 20]
 
     return data
 

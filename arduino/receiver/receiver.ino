@@ -44,12 +44,12 @@
 #include <SPI.h>
 #include <SD.h>
 
+#define ONLY_SF_7 
+
 #define POWER_ENABLE_PIN          8
 #define GPS_RX_PIN                7
-// Try Analog pin 3 instead of D10 to use deek robot SD shield
 #define GPS_TX_PIN                10
 #define CAN_WE_WRITE_PIN          A1
-// This can become D10 again if GPS_TX_PIN can become A3
 #define SD_CS                     4
 
 #define GPS_WRITE_UPDATE_INTERVAL 1000
@@ -286,7 +286,12 @@ void checkRx() {
 }
 
 void hopToDifferentSF() {
+  #ifdef ONLY_SF_7
+  if(current_spreading_factor_id != 0) current_spreading_factor_id = 0;
+  else return;
+  #else
   current_spreading_factor_id = (current_spreading_factor_id + 1) % MAX_SETTINGS;
+  #endif
   loraSetSF(SPREADING_FACTORS[current_spreading_factor_id]);
   loraListen();
 }
