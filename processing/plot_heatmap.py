@@ -30,6 +30,7 @@ import pandas as pd
 from folium.map import Marker
 from folium.plugins import HeatMap, MarkerCluster
 
+import seaborn as sns; sns.set()
 import util as util
 
 PLOT_SNR = False
@@ -44,9 +45,10 @@ LON_GRID_SERIES = "lon_discrete"
 
 CENTER = [51.0602666, 3.7079671]
 
-HEADER = ["time", "sat", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal", "lat", "lon", "locValid", "age", "ageValid", "alt","altValid", "course", "courseValid", "speed", "speedValid", "rssi", "snr", "freqError",  "sf", "isPacket"]
+HEADER = ["time", "sat", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal", "lat", "lon", "locValid", "age",
+          "ageValid", "alt", "altValid", "course", "courseValid", "speed", "speedValid", "rssi", "snr", "freqError",  "sf", "isPacket"]
 
-#HEADER = ["time", "sat", "satValid", "hdopVal", "hdopValid", "lat", "lon", "locValid", "age", "ageValid", "alt",
+# HEADER = ["time", "sat", "satValid", "hdopVal", "hdopValid", "lat", "lon", "locValid", "age", "ageValid", "alt",
 #         "altValid", "course", "courseValid", "speed", "speedValid", "rssi", "snr", "freqError",  "sf", "isPacket"]
 
 currentDir = os.path.dirname(os.path.abspath(__file__))
@@ -81,8 +83,10 @@ print(for_map)
 for_map.plot.scatter(x='distance', y='pl_db', c='sf',  colormap='viridis')
 plt.show()
 
+sns.scatterplot(x='distance', y='pl_db', hue='sf', data=for_map)
+plt.show()
 
-hmap = folium.Map(location=CENTER, zoom_start=18, ) #  tiles="Stamen Toner")
+hmap = folium.Map(location=CENTER, zoom_start=18, )  # tiles="Stamen Toner")
 
 
 folium.Circle(
