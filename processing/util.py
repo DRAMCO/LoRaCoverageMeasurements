@@ -71,8 +71,8 @@ def get_geojson_grid(df, n, plot_snr):
         num_values[row_idx][col_idx] += 1
         transparant_matrix[row_idx][col_idx] = 1
 
-    # values == 0 -> = 1 in order to not divide by 
-    num_values[num_values < 1 ] = 1
+    # values == 0 -> = 1 in order to not divide by
+    num_values[num_values < 1] = 1
     colors = colors/num_values
     colors = np.nan_to_num(colors)
 
@@ -141,7 +141,9 @@ def get_geojson_grid(df, n, plot_snr):
     colormap.caption = caption
     return all_boxes, colormap
 
-
+def onlyPackets(df):
+    return df[df.isPacket > 0]
+    
 def addPathLossTo(df: pd.DataFrame, tp=20, gain=0):
     """
     Calculate the path loss in dB.
@@ -154,6 +156,7 @@ def addPathLossTo(df: pd.DataFrame, tp=20, gain=0):
 
     # correction term according to https://www.semtech.com/uploads/documents/DS_SX1276-7-8-9_W_APP_V5.pdf p87
     df["pl_db"] = tp + gain - (df.rss)
+
 
 def addDistanceTo(df: pd.DataFrame, origin):
     lat = origin[0]
@@ -184,7 +187,7 @@ def addDistanceTo(df: pd.DataFrame, origin):
     # TODO add altitude as well ?
 
 
-def sort(data):
+def filter(data):
     data = data[data.sat > 0]
     data = data[data.ageValid > 0]
     data = data[data.hdopVal < 5]
@@ -192,17 +195,18 @@ def sort(data):
     data = data[data.pdopVal < 5]
     data = data[data.locValid > 0]
     data = data[data.ageValid > 0]
-    
 
-    data = data[(data.sf == 12)  | (data.sf == 9) | (data.sf == 7)] 
+    data = data[(data.sf == 12) | (data.sf == 9) | (data.sf == 7)]
 
-
-    snr_correction = data.snr.copy()  
+    snr_correction = data.snr.copy()
 
     snr_correction[snr_correction > 0] = 0
     data["rss"] = data.rssi + snr_correction*0.25
 
     data = data[data.rss < 20]
+    # remove unneeded columns
+    data.drop(columns=["sat", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal", "locValid", "age",
+          "ageValid", "altValid", "course", "courseValid", "speed", "speedValid", "rssi"])
 
     return data
 
