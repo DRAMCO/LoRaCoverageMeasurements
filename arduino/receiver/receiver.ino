@@ -165,10 +165,6 @@ void setup() {
     s.concat(analogRead(RANDOM_PIN));
     delay(10);
     s.concat(analogRead(RANDOM_PIN));
-    delay(10);
-    s.concat(analogRead(RANDOM_PIN));
-    delay(10);
-    s.concat(analogRead(RANDOM_PIN));
     s.concat(".csv");
     Serial.println(s);
     myFile = SD.open(s, FILE_WRITE);
