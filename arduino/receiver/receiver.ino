@@ -44,7 +44,7 @@
 #include <SPI.h>
 #include <SD.h>
 
-//#define ONLY_SF_7 
+//#define ONLY_SF_7
 
 #define POWER_ENABLE_PIN          8
 #define GPS_RX_PIN                7
@@ -63,12 +63,12 @@
 float FREQ = 869.525;
 
 //#define DEBUG
-#define DEBUG_ERR
+//#define DEBUG_ERR
 
 // be sure that DEBUG ERR is defined if DEBUG is on
-#ifdef DEBUG
-#define DEBUG_ERR
-#endif
+//#ifdef DEBUG
+//#define DEBUG_ERR
+//#endif
 
 
 // create instance of LoRa class using SX1278 module
@@ -103,14 +103,8 @@ float pdopVal;
 boolean hdopValid = false;
 unsigned long ageVal;
 boolean ageValid = false;
-TinyGPSDate dateVal;
-TinyGPSTime timeVal;
 float altitudeVal;
 boolean altitudeValid = false;
-float courseVal;
-boolean courseValid = false;
-float speedVal;
-boolean speedValid;
 uint8_t spreadingFactor = 0;
 
 boolean packetReceived = false;
@@ -120,6 +114,7 @@ uint32_t lastSettingsChanged;
 uint32_t lastPacketReceived;
 
 volatile bool receivedFlag = false;
+
 
 void blink() {
   if (myFile) {
@@ -136,14 +131,12 @@ void blink() {
 
 
 void setup() {
+
   pinMode(A0, OUTPUT);
   digitalWrite(A0, LOW);
-
-  // Indicate whether it is safe to write to the SD card (prevent SD failure)
-  pinMode(CAN_WE_WRITE_PIN, INPUT);
-  pinMode(RANDOM_PIN, INPUT);
+  randomSeed(analogRead(RANDOM_PIN));
   checkCanWrite();
-  Serial.begin(9600);
+  //Serial.begin(9600);
 
   // Begin serial connection to the GPS device
   ss.begin(GPS_BAUD);
@@ -158,26 +151,33 @@ void setup() {
   checkCanWrite();
   // debug(F("Initializing SD card..."));
   if (!SD.begin(SD_CS)) {
-   // debug(F("initialization SD failed!"));
+    // debug(F("initialization SD failed!"));
     blink();
   } else {
-    String s = "";
-    s.concat(analogRead(RANDOM_PIN));
-    delay(10);
-    s.concat(analogRead(RANDOM_PIN));
-    delay(10);
-    s.concat(analogRead(RANDOM_PIN));
-    delay(10);
-    s.concat(analogRead(RANDOM_PIN));
-    s.concat(".csv");
-    Serial.println(s);
-    myFile = SD.open(s, FILE_WRITE);
+    myFile = SD.open(getRandomFileName(), FILE_WRITE);
+    if (!myFile) blink();
   }
   //debug(F("initialization SD done."));
 
   lastGPSupdate = millis();
   lastSettingsChanged = millis();
 }
+
+String getRandomFileName() {
+  String s = "";
+  for (int i = 0; i < 12; i++) {
+    byte randomValue = random(0, 37);
+    char letter = randomValue + 'a';
+    if (randomValue > 26) {
+      letter = (randomValue - 26) + '0';
+    }
+    s.concat(letter);
+  }
+  s.concat(".csv");
+  return s;
+}
+
+
 
 String getDateTimeString(TinyGPSDate &d, TinyGPSTime &t)
 {
@@ -189,7 +189,7 @@ String getDateTimeString(TinyGPSDate &d, TinyGPSTime &t)
 
   sprintf(sz, "%02d:%02d:%02d ", t.hour(), t.minute(), t.second());
   s.concat(sz);
-  debug(s);
+  //debug(s);
   return s;
 
   smartDelay(0);
@@ -226,21 +226,10 @@ void writeToSD(bool packet) {
     myFile.print(DELIMETER);
     myFile.print(altitudeValid);
     myFile.print(DELIMETER);
-    myFile.print(courseVal, 2);
-    myFile.print(DELIMETER);
-    myFile.print(courseValid);
-    myFile.print(DELIMETER);
-    myFile.print(speedVal, 2);
-    myFile.print(DELIMETER);
-    myFile.print(speedValid);
-    myFile.print(DELIMETER);
     myFile.print(lora.lastPacketRSSI);
     myFile.print(DELIMETER);
     myFile.print(lora.lastPacketSNR);
     myFile.print(DELIMETER);
-    myFile.print(lora.getFrequencyError());
-    myFile.print(DELIMETER);
-
     myFile.print(spreadingFactor);
 
     myFile.print(DELIMETER);
@@ -268,11 +257,11 @@ void loop() {
 
   if (currentTime - lastSettingsChanged > WINDOW_TIME_PER_SF[current_spreading_factor_id]) {
     // if lastPacketReceived inside rx window do not change SF
-    if(currentTime - lastPacketReceived > WINDOW_TIME_PER_SF[current_spreading_factor_id]){
+    if (currentTime - lastPacketReceived > WINDOW_TIME_PER_SF[current_spreading_factor_id]) {
       hopToDifferentSF();
       lastSettingsChanged = millis();
     }
-    myFile.flush(); 
+    myFile.flush();
   }
 
   checkRx();
@@ -295,12 +284,12 @@ void checkRx() {
 }
 
 void hopToDifferentSF() {
-  #ifdef ONLY_SF_7
-  if(current_spreading_factor_id != 0) current_spreading_factor_id = 0;
+#ifdef ONLY_SF_7
+  if (current_spreading_factor_id != 0) current_spreading_factor_id = 0;
   else return;
-  #else
+#else
   current_spreading_factor_id = (current_spreading_factor_id + 1) % MAX_SETTINGS;
-  #endif
+#endif
   loraSetSF(SPREADING_FACTORS[current_spreading_factor_id]);
   loraListen();
 }
@@ -313,7 +302,7 @@ bool receivePacket() {
   if (state == ERR_NONE) {
     //debug(F("PACKET RECEIVED"));
     spreadingFactor = arr[0];
-    debug(String(spreadingFactor));
+    //debug(String(spreadingFactor));
     lastPacketReceived = millis();
   } else {
     //error(F("packet rx?"), state);
@@ -346,15 +335,9 @@ void receiveGPS() {
   hdopValid = gps.hdop.isValid();
   ageVal = gps.location.age();
   ageValid = gps.location.isValid();
-  dateVal = gps.date;
-  timeVal = gps.time;
   altitudeVal = gps.altitude.meters();
   altitudeValid = gps.altitude.isValid();
-  courseVal = gps.course.deg();
-  courseValid = gps.course.isValid();
-  speedVal = gps.speed.kmph();
-  speedValid = gps.speed.isValid();
-  pdopVal = String(pdop.value()).toFloat(); 
+  pdopVal = String(pdop.value()).toFloat();
   vdopVal = String(vdop.value()).toFloat();
 
 }
@@ -370,7 +353,7 @@ void setMsgRx() {
 }
 
 void initLoRa() {
-  debug(F("Initializing ... "));
+  //debug(F("Initializing ... "));
   loraBegin();
   lora.setDio0Action(setMsgRx);
   loraSetSF(SPREADING_FACTORS[current_spreading_factor_id]);
@@ -382,17 +365,17 @@ void initLoRa() {
 void loraBegin() {
   int16_t state = lora.begin();
   if (state == ERR_NONE) {
-    success(F("Initialization successful"));
+    //success(F("Initialization successful"));
   } else {
     error("Initialization failed", state);
   }
 }
 
 void loraListen() {
-  debug(F("Starting to listen ... "));
+  //  debug(F("Starting to listen ... "));
   int16_t state = lora.startReceive();
   if (state == ERR_NONE) {
-    success(F("success!"));
+    //success(F("success!"));
   } else {
     error(F("failed, code "), state);
   }
@@ -428,11 +411,13 @@ void loraSetFreq() {
 
 
 /* SERIAL output information */
-void debug(String s) {
-#ifdef DEBUG
+/*
+  void debug(String s) {
+  #ifdef DEBUG
   Serial.println(s);
-#endif
-}
+  #endif
+  }
+*/
 
 void error(String s) {
 #ifdef DEBUG_ERR
@@ -456,8 +441,11 @@ void error(uint16_t state) {
   blink();
 }
 
-void success(String s) {
-#ifdef DEBUG
+/*
+  void success(String s) {
+  #ifdef DEBUG
   Serial.println(s);
-#endif
-}
+  #endif
+
+  }
+*/
