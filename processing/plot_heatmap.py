@@ -76,9 +76,6 @@ grid_size = 50
 
 for_map = concatenated_df
 
-#for_map = pd.read_csv(data_file, sep=',', header=None,
-#                      names=HEADER)
-
 for_map = util.sort(for_map)
 for_map['time'] = pd.to_datetime(
     for_map['time'], format='%m/%d/%Y %H:%M:%S ', utc=True)
