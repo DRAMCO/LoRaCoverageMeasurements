@@ -136,14 +136,22 @@ def get_geojson_grid(df, n, plot_snr):
             geo_json["features"].append(grid_feature)
             all_boxes.append(geo_json)
 
+    min_val = 100
+    max_val = -100
+    for val in np.nditer(colors):
+        min_val = val if val < min_val else min_val
+        max_val = val if val > max_val and val < 0 else max_val
+
     colormap = cm.linear.viridis.scale(
-        df[values_to_plot_id].min(), df[values_to_plot_id].max())
-    colormap.caption = caption
+        min_val, max_val)
+    colormap.caption = caption.upper()
     return all_boxes, colormap
+
 
 def onlyPackets(df):
     return df[df.isPacket > 0]
-    
+
+
 def addPathLossTo(df: pd.DataFrame, tp=20, gain=0):
     """
     Calculate the path loss in dB.
@@ -190,23 +198,38 @@ def addDistanceTo(df: pd.DataFrame, origin):
 def filter(data):
     data = data[data.sat > 0]
     data = data[data.ageValid > 0]
-    data = data[data.hdopVal < 5]
-    data = data[data.vdopVal < 5]
-    data = data[data.pdopVal < 5]
+    data = data[data.hdopVal < 10]
+    data = data[data.vdopVal < 10]
+    data = data[data.pdopVal < 10]
     data = data[data.locValid > 0]
     data = data[data.ageValid > 0]
 
     data = data[(data.sf == 12) | (data.sf == 9) | (data.sf == 7)]
 
-    snr_correction = data.snr.copy()
+    # Correction factor as described in https://cdn-shop.adafruit.com/product-files/3179/sx1276_77_78_79.pdf
 
+    # default: Packet Strength (dBm) = -157 + PacketRssi
+    # if SNR < 0 : Packet Strength (dBm) = -157 + PacketRssi + PacketSnr * 0.25
+    # if RSSI > -100dBm: RSSI = -157 + 16/15 * PacketRssi
+
+    packet_rssi = data["rssi"] + 157
+    rssi_correction = packet_rssi
+
+    snr_correction = data.snr.copy()
     snr_correction[snr_correction > 0] = 0
-    data["rss"] = data.rssi + snr_correction*0.25
+    rssi_correction = packet_rssi + snr_correction*0.25
+
+    data['correction_factor'] = 1
+    correction_factor = data.correction_factor.copy()
+    correction_factor[data["rssi"] > -100] = 16/15
+    rssi_correction = packet_rssi*data['correction_factor']
+
+    data["rss"] = - 157 + rssi_correction
 
     data = data[data.rss < 20]
     # remove unneeded columns
     data.drop(columns=["sat", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal", "locValid", "age",
-          "ageValid", "altValid", "course", "courseValid", "speed", "speedValid", "rssi"])
+                       "ageValid", "altValid", "course", "courseValid", "speed", "speedValid", "rssi", "correction_factor"])
 
     return data
 

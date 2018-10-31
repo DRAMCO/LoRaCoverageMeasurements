@@ -54,6 +54,7 @@ df.sort_values(by='time')
 
 CENTER = [51.0595576, 3.7085241]
 util.addDistanceTo(df, CENTER)
+df = df[df['distance'] < 1000]
 util.addPathLossTo(df)
 
 output_path = os.path.abspath(os.path.join(

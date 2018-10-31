@@ -45,56 +45,35 @@ LAT_GRID_SERIES = "lat_discrete"
 LON_GRID_SERIES = "lon_discrete"
 
 
-
-HEADER = ["time", "sat", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal", "lat", "lon", "locValid", "age",
-          "ageValid", "alt", "altValid", "course", "courseValid", "speed", "speedValid", "rssi", "snr", "freqError",  "sf", "isPacket"]
-
-# HEADER = ["time", "sat", "satValid", "hdopVal", "hdopValid", "lat", "lon", "locValid", "age", "ageValid", "alt",
-#         "altValid", "course", "courseValid", "speed", "speedValid", "rssi", "snr", "freqError",  "sf", "isPacket"]
+time_string_file = "2018_10_31"
 
 currentDir = os.path.dirname(os.path.abspath(__file__))
-#data_file = os.path.abspath(os.path.join(
-#    currentDir, '..', 'data', "306309"))
+input_path = os.path.abspath(os.path.join(
+    currentDir, '..', 'result'))
+input_file = "preprocessed_data_{}.pkl".format(time_string_file)
+input_file_path = os.path.join(input_path, input_file)
 
-path = os.path.abspath(os.path.join(
-    currentDir, '..', 'data', 'measurements_2'))                     # use your path
-# advisable to use os.path.join as this makes concatenation OS independent
-all_files = glob.glob(os.path.join(path, "*.csv"))
+output_fig_pdf = os.path.join(
+    input_path, 'path_loss_model_{}.pdf'.format(time_string_file))
+output_fig_pgf = os.path.join(
+    input_path, 'path_loss_model_{}.pgf'.format(time_string_file))
 
-print(all_files)
-#os.system("pause")
-
-df_from_each_file = (pd.read_csv(f, sep=',', header=None, names=HEADER) for f in all_files)
-concatenated_df = pd.concat(df_from_each_file, ignore_index=True)
+for_map = pd.read_pickle(input_file_path)
+for_map = util.onlyPackets(for_map)
 
 
 output_file_name = "heatmap_SNR.html" if PLOT_SNR else "heatmap_RSS.html"
 output_file = os.path.abspath(os.path.join(
     currentDir, '..', 'result', output_file_name))
 
-grid_size = 50
-
-for_map = concatenated_df
-
-for_map = util.sort(for_map)
-for_map['time'] = pd.to_datetime(
-    for_map['time'], format='%m/%d/%Y %H:%M:%S ', utc=True)
-print(for_map)
-
-for_map.sort_values(by='time')
-print(for_map.rss)
-for_map_gps = for_map.copy()
-
-for_map = for_map[for_map.isPacket > 0]
+grid_size = 25
 
 
 CENTER = [51.0595576, 3.7085241]
-util.addDistanceTo(for_map, CENTER)
-util.addPathLossTo(for_map)
 
-for_map = for_map[for_map['time'].dt.day == 30] # filter only today
+for_map = for_map[(for_map['time'].dt.day == 30) | (
+    for_map['time'].dt.day == 31)]  # filter only today
 
-print(for_map)
 
 
 #for_map.plot.scatter(x='distance', y='pl_db', c='sf',  colormap='viridis')
@@ -102,42 +81,42 @@ print(for_map)
 #
 d0 = 20 #old data
 #
-for_map = for_map[for_map.distance > 20]
-for_map['distance_log'] = 10*np.log10(for_map['distance']/20)
-print(for_map['distance_log'])
-sns.lmplot(x='distance_log', y='pl_db', hue='sf', data=for_map)
-
-
-from statsmodels.formula.api import ols
-model = ols("pl_db ~ distance_log", for_map).fit()
-print(model.params)
-pl0, n = model.params
-print(model.bse)
-print(model.summary())
+#for_map = for_map[for_map.distance > 20]
+#for_map['distance_log'] = 10*np.log10(for_map['distance']/20)
+#print(for_map['distance_log'])
+#sns.lmplot(x='distance_log', y='pl_db', hue='sf', data=for_map)
+#
+#
+#from statsmodels.formula.api import ols
+#model = ols("pl_db ~ distance_log", for_map).fit()
+#print(model.params)
+#pl0, n = model.params
+#print(model.bse)
+#print(model.summary())
 
 #plt.scatter(y=for_map['pl_db'], x=for_map['distance_log'])
 #print(n)
 #print(pl0)
 
-from scipy import stats
-slope, intercept, r_value, p_value, std_err = stats.linregress(
-    for_map['distance_log'], for_map['pl_db'])
+#from scipy import stats
+#slope, intercept, r_value, p_value, std_err = stats.linregress(
+#    for_map['distance_log'], for_map['pl_db'])
+#
+#print(slope, intercept, r_value, p_value, std_err)
+#
+#for_map['epl'] = n*for_map['distance_log']+pl0
+#for_map['epl_free'] = 2*for_map['distance_log']+pl0
+#sigma = np.std(for_map['epl'] - for_map['pl_db'])
+#print(sigma)
+#sns.scatterplot(x='distance_log', y='epl', data=for_map)
+#
+#
+#plt.plot([0, for_map['distance_log'].max()], [137+20, 137+20])
+##plt.plot(x=for_map['distance_log'].values, y=y)
+##plt.plot(x=for_map['distance_log'].values, y=y_free_space)
+#plt.show()  
 
-print(slope, intercept, r_value, p_value, std_err)
-
-for_map['epl'] = n*for_map['distance_log']+pl0
-for_map['epl_free'] = 2*for_map['distance_log']+pl0
-sigma = np.std(for_map['epl'] - for_map['pl_db'])
-print(sigma)
-sns.scatterplot(x='distance_log', y='epl', data=for_map)
-
-
-plt.plot([0, for_map['distance_log'].max()], [137+20, 137+20])
-#plt.plot(x=for_map['distance_log'].values, y=y)
-#plt.plot(x=for_map['distance_log'].values, y=y_free_space)
-plt.show()  
-
-hmap = folium.Map(location=CENTER, zoom_start=18, )  # tiles="Stamen Toner")
+hmap = folium.Map(location=CENTER, zoom_start=18,  tiles="cartodbpositron")
 
 
 folium.Circle(

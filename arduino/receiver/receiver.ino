@@ -44,7 +44,7 @@
 #include <SPI.h>
 #include <SD.h>
 
-#define ONLY_SF_7 
+//#define ONLY_SF_7 
 
 #define POWER_ENABLE_PIN          8
 #define GPS_RX_PIN                7
@@ -80,7 +80,7 @@ SX1278 lora = new Module(6, 2, 3);
 File myFile;
 
 const uint8_t SPREADING_FACTORS[] = {7, 9, 12};
-const uint16_t WINDOW_TIME_PER_SF[] = {3000, 6000, 24000}; //3 * X interval for each SF
+const uint16_t WINDOW_TIME_PER_SF[] = {5000, 10000, 40000}; //5 * X interval for each SF
 uint8_t current_spreading_factor_id = 0;
 
 // The TinyGPS++ object
@@ -117,6 +117,7 @@ boolean packetReceived = false;
 
 uint32_t lastGPSupdate;
 uint32_t lastSettingsChanged;
+uint32_t lastPacketReceived;
 
 volatile bool receivedFlag = false;
 
@@ -154,6 +155,7 @@ void setup() {
   // Initialize RFM95 LoRa module
   initLoRa();
 
+  checkCanWrite();
   // debug(F("Initializing SD card..."));
   if (!SD.begin(SD_CS)) {
    // debug(F("initialization SD failed!"));
@@ -163,6 +165,11 @@ void setup() {
     s.concat(analogRead(RANDOM_PIN));
     delay(10);
     s.concat(analogRead(RANDOM_PIN));
+    delay(10);
+    s.concat(analogRead(RANDOM_PIN));
+    delay(10);
+    s.concat(analogRead(RANDOM_PIN));
+    s.concat(".csv");
     Serial.println(s);
     myFile = SD.open(s, FILE_WRITE);
   }
@@ -260,8 +267,11 @@ void loop() {
   checkRx();
 
   if (currentTime - lastSettingsChanged > WINDOW_TIME_PER_SF[current_spreading_factor_id]) {
-    hopToDifferentSF();
-    lastSettingsChanged = millis();
+    // if lastPacketReceived inside rx window do not change SF
+    if(currentTime - lastPacketReceived > WINDOW_TIME_PER_SF[current_spreading_factor_id]){
+      hopToDifferentSF();
+      lastSettingsChanged = millis();
+    }
     myFile.flush(); 
   }
 
@@ -281,7 +291,6 @@ void checkRx() {
     receivePacket();
     receivedFlag = false;
     digitalWrite(A0, LOW);
-
   }
 }
 
@@ -305,6 +314,7 @@ bool receivePacket() {
     //debug(F("PACKET RECEIVED"));
     spreadingFactor = arr[0];
     debug(String(spreadingFactor));
+    lastPacketReceived = millis();
   } else {
     //error(F("packet rx?"), state);
   }

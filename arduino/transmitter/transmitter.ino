@@ -26,11 +26,7 @@
 
 #include <LoRaLibMod.h>
 
-
-
 #define SPREADING_FACTOR               9
-
-
 
 
 #if SPREADING_FACTOR == 7
