@@ -41,14 +41,21 @@ current_path = os.path.abspath(os.path.join(
     currentDir, '..', 'data', 'measurements_2'))
 all_files = glob.glob(os.path.join(current_path, "*.csv"))
 
+print("--------------------- EXECUTING preprocessing.py ---------------------")
+size = 0
+for file in all_files:
+    size += os.path.getsize(file)
+print(" Reading {0} files {1:.2f} kB".format(len(all_files), size/(1024)))
+
 df_from_each_file = (pd.read_csv(f, sep=',', header=None,
                                  names=HEADER) for f in all_files)
 df = pd.concat(df_from_each_file, ignore_index=True)
 
+total_rows = df.shape[0]
+
 df = util.filter(df)
 df['time'] = pd.to_datetime(
     df['time'], format='%m/%d/%Y %H:%M:%S ', utc=True)
-
 
 df.sort_values(by='time')
 
@@ -57,9 +64,17 @@ util.addDistanceTo(df, CENTER)
 df = df[df['distance'] < 1000]
 util.addPathLossTo(df)
 
+current_rows = df.shape[0]
+current_rows_data = df[df.isPacket > 0].shape[0]
+
+print(" Processed {0}/{1} {2:.1f}% rows".format(current_rows, total_rows, (current_rows/total_rows)*100))
+print(" Processed {0}/{1} {2:.1f}% and {3:.1f}% of total".format(current_rows_data, current_rows, (current_rows_data/current_rows)*100,(current_rows_data/total_rows)*100))
+
 output_path = os.path.abspath(os.path.join(
     currentDir, '..', 'result'))
 output_file = "preprocessed_data_{}.pkl".format(
     df['time'].dt.strftime("%Y_%m_%d").iloc[0])
 output_file_path = os.path.join(output_path, output_file)
 df.to_pickle(output_file_path)
+print(" Saving to {}".format(output_file_path))
+print("--------------------- DONE preprocessing.py ---------------------")
