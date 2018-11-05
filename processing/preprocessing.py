@@ -33,8 +33,11 @@ import pandas as pd
 
 import util as util
 
-HEADER = ["time", "sat", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal", "lat", "lon", "locValid", "age",
-          "ageValid", "alt", "altValid", "course", "courseValid", "speed", "speedValid", "rssi", "snr", "freqError",  "sf", "isPacket"]
+HEADER_LONG = ["time", "sat", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal", "lat", "lon", "locValid", "age",
+               "ageValid", "alt", "altValid", "course", "courseValid", "speed", "speedValid", "rssi", "snr", "freqError",  "sf", "isPacket"]
+HEADER_SHORT = ["time", "sat", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal", "lat", "lon", "locValid", "age",
+          "ageValid", "alt", "altValid", "rssi", "snr",  "sf", "isPacket"]
+
 
 currentDir = os.path.dirname(os.path.abspath(__file__))
 current_path = os.path.abspath(os.path.join(
@@ -47,9 +50,15 @@ for file in all_files:
     size += os.path.getsize(file)
 print(" Reading {0} files {1:.2f} kB".format(len(all_files), size/(1024)))
 
-df_from_each_file = (pd.read_csv(f, sep=',', header=None,
-                                 names=HEADER) for f in all_files)
-df = pd.concat(df_from_each_file, ignore_index=True)
+df_from_each_file = []
+for f in all_files:
+    df = pd.read_csv(f, sep=',', header=None,
+                     names=None)
+    df.columns = HEADER_LONG if(
+        df.shape[1] == len(HEADER_LONG)) else HEADER_SHORT
+    df_from_each_file.append(df)
+
+df = pd.concat(df_from_each_file, ignore_index=True, sort=False)
 
 total_rows = df.shape[0]
 
@@ -61,7 +70,7 @@ df.sort_values(by='time')
 
 CENTER = [51.0595576, 3.7085241]
 util.addDistanceTo(df, CENTER)
-df = df[df['distance'] < 1000]
+df = df[df['distance'] < 10*1000]
 util.addPathLossTo(df)
 
 current_rows = df.shape[0]

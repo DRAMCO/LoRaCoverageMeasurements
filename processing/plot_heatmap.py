@@ -40,11 +40,6 @@ input_path = os.path.abspath(os.path.join(
 input_file = "preprocessed_data_{}.pkl".format(time_string_file)
 input_file_path = os.path.join(input_path, input_file)
 
-output_fig_pdf = os.path.join(
-    input_path, 'path_loss_model_{}.pdf'.format(time_string_file))
-output_fig_pgf = os.path.join(
-    input_path, 'path_loss_model_{}.pgf'.format(time_string_file))
-
 for_map = pd.read_pickle(input_file_path)
 for_map = util.onlyPackets(for_map)
 
@@ -58,8 +53,8 @@ grid_size = 25
 
 CENTER = [51.0595576, 3.7085241]
 
-for_map = for_map[(for_map['time'].dt.day == 30) | (
-    for_map['time'].dt.day == 31)]  # filter only today
+# for_map = for_map[(for_map['time'].dt.day == 30) | (
+ #   for_map['time'].dt.day == 31)]  # filter only today
 
 hmap = folium.Map(location=CENTER, zoom_start=18,  tiles="cartodbpositron", control_scale = True)
 

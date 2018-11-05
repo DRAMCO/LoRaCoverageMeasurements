@@ -198,12 +198,12 @@ def addDistanceTo(df: pd.DataFrame, origin):
 def filter(data):
     data = data[data.sat > 0]
     data = data[data.ageValid > 0]
-    data = data[data.hdopVal < 10]
-    data = data[data.vdopVal < 10]
-    data = data[data.pdopVal < 10]
+    data = data[data.hdopVal < 75]
+    data = data[data.vdopVal < 75]
+    data = data[data.pdopVal < 75]
     data = data[data.locValid > 0]
     data = data[data.ageValid > 0]
-
+#
     data = data[(data.sf == 12) | (data.sf == 9) | (data.sf == 7)]
 
     # Correction factor as described in https://cdn-shop.adafruit.com/product-files/3179/sx1276_77_78_79.pdf
@@ -212,6 +212,9 @@ def filter(data):
     # if SNR < 0 : Packet Strength (dBm) = -157 + PacketRssi + PacketSnr * 0.25
     # if RSSI > -100dBm: RSSI = -157 + 16/15 * PacketRssi
 
+    data.loc[:, "rssi"] = data.rssi.astype(float)
+    data.loc[data["rssi"] > 20, "rssi"] = -1 * data[data["rssi"] > 20]
+
     packet_rssi = data["rssi"] + 157
     rssi_correction = packet_rssi
 
@@ -219,17 +222,18 @@ def filter(data):
     snr_correction[snr_correction > 0] = 0
     rssi_correction = packet_rssi + snr_correction*0.25
 
-    data['correction_factor'] = 1
-    correction_factor = data.correction_factor.copy()
-    correction_factor[data["rssi"] > -100] = 16/15
+    data.loc[:,'correction_factor'] = 1
+    data.loc[data["rssi"] > -100, 'correction_factor'] = 16/15
     rssi_correction = packet_rssi*data['correction_factor']
 
-    data["rss"] = - 157 + rssi_correction
+    data.loc[:, "rss"] = - 157 + rssi_correction
 
-    data = data[data.rss < 20]
+    data = data[data["rss"] < 20]
     # remove unneeded columns
-    data.drop(columns=["sat", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal", "locValid", "age",
-                       "ageValid", "altValid", "course", "courseValid", "speed", "speedValid", "rssi", "correction_factor"])
+    cols = ["sat", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal", "locValid", "age",
+               "ageValid", "altValid", "course", "courseValid", "speed", "speedValid", "rssi", "correction_factor"]
+    cols = [c for c in cols if c in data.index]
+    data.drop(cols)
 
     return data
 

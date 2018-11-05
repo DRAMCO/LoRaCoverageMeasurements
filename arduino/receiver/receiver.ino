@@ -80,7 +80,7 @@ SX1278 lora = new Module(6, 2, 3);
 File myFile;
 
 const uint8_t SPREADING_FACTORS[] = {7, 9, 12};
-const uint16_t WINDOW_TIME_PER_SF[] = {5000, 10000, 40000}; //5 * X interval for each SF
+const uint16_t WINDOW_TIME_PER_SF[] = {5000, 10000, 20000}; //5 * X interval for each SF
 uint8_t current_spreading_factor_id = 0;
 
 // The TinyGPS++ object
