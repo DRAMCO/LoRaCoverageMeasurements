@@ -66,16 +66,16 @@ def latexify(fig_width=None, fig_height=None, columns=1):
         fig_height = MAX_HEIGHT_INCHES
 
     params = {
-        'backend': 'ps',
-        
+        # 'backend': 'ps',
+
         'axes.labelsize': 8,
         'axes.titlesize': 8,
         'legend.fontsize': 8,  # was 10
         'xtick.labelsize': 8,
         'ytick.labelsize': 8,
-        'text.usetex': True,
-        "pgf.rcfonts": False,
-        "pgf.texsystem": "pdflatex",
+        # 'text.usetex': True,
+        # "pgf.rcfonts": False,
+        # "pgf.texsystem": "pdflatex",
         'figure.figsize': [fig_width, fig_height],
         'font.family': 'serif'
     }
@@ -104,7 +104,6 @@ def format_axes(ax):
 latexify()
 
 
-
 time_string_file = "2018_10_31"
 
 currentDir = os.path.dirname(os.path.abspath(__file__))
@@ -129,13 +128,14 @@ d0 = 20  # old data
 df = df[df.distance > d0]
 df['distance_log'] = 10*np.log10(df.distance/20)
 
-#sns.lmplot(x='distance_log', y='pl_db', data=df)
-
 
 slope, intercept, r_value, p_value, std_err = stats.linregress(
     df['distance_log'], df['pl_db'])
 pl0 = intercept
 n = slope
+
+print(slope, intercept, r_value, p_value, std_err)
+
 
 df['epl'] = n*df['distance_log']+pl0
 df['epl_free'] = 2*df['distance_log']+pl0
@@ -149,14 +149,19 @@ fig = plt.figure(figsize=(4, 3))
 ax = fig.add_subplot(1, 1, 1)
 plt.xscale('log')
 ax.xaxis.set_major_formatter(ScalarFormatter())
-#ax.xaxis.set_minor_formatter(FormatStrFormatter("%.1f"))
+# ax.xaxis.set_minor_formatter(FormatStrFormatter("%.1f"))
 ax.spines['right'].set_visible(False)
 ax.spines['top'].set_visible(False)
 
-ax.scatter(df['distance'], df['pl_db'],
+idx = df['distance'] < 300
+ax.scatter(df['distance'][idx], df['pl_db'][idx],
            marker='x', label="Measured Path Loss", s=1, c='darkorange')
+idx = (df['distance'] > 300) | (df['distance'] == 300)
+ax.scatter(df['distance'][idx], df['pl_db'][idx],
+           marker='x', label="Measured Path Loss", s=1, c='0.50')
 ax.set_xlabel('Log distance (m)')
 ax.set_ylabel('Path Loss (dB)')
+
 
 x, y = zip(*sorted(zip(df['distance'], df['epl_log'])))
 ax.plot(x, y, ls='-', label="Expected Path Loss",
@@ -164,6 +169,20 @@ ax.plot(x, y, ls='-', label="Expected Path Loss",
 x, y = zip(*sorted(zip(df['distance'], df['epl_free_log'])))
 ax.plot(x, y, ls='dashed', label="Free Space Path Loss",
         linewidth=1.5, color='dimgray')
+
+idx = df['distance'] < 300
+slope, intercept, r_value, p_value, std_err = stats.linregress(
+    df['distance_log'][idx], df['pl_db'][idx])
+pl0 = intercept
+n = slope
+print(slope, intercept, r_value, p_value, std_err)
+df['epl_log'] = 10*n*np.log10(df['distance'])+(-10*n*np.log10(d0) + pl0)
+
+x, y = zip(*sorted(zip(df['distance'], df['epl_log'])))
+ax.plot(x, y, ls='-', label="Expected Path Loss (without gray measurements)",
+        linewidth=1.5, color='k')
+
+
 plt.legend(framealpha=0.0)
 
 # def format_func(value, tick_number):
@@ -182,11 +201,11 @@ plt.legend(framealpha=0.0)
 #plt.plot([0, df['distance'].max()], [120+20, 120+20])
 #plt.plot([0, df['distance'].max()], [125+20, 125+20])
 format_axes(ax)
-#plt.tight_layout()
-#plt.show()
+# plt.tight_layout()
+# plt.show()
 #
 #plt.savefig(output_fig_pdf, format='pdf', bbox_inches='tight')
-plt.savefig(output_fig_pgf, format='pgf', bbox_inches='tight')
+#plt.savefig(output_fig_pgf, format='pgf', bbox_inches='tight')
 
 
 fig = plt.figure(figsize=(4, 3))
