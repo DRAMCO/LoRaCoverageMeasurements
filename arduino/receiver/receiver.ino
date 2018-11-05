@@ -62,8 +62,8 @@
 
 float FREQ = 869.525;
 
-//#define DEBUG
-//#define DEBUG_ERR
+#define DEBUG
+#define DEBUG_ERR
 
 // be sure that DEBUG ERR is defined if DEBUG is on
 //#ifdef DEBUG
@@ -117,6 +117,7 @@ volatile bool receivedFlag = false;
 
 
 void blink() {
+  //Serial.println("in blink");
   if (myFile) {
     myFile.close();
   }
@@ -151,11 +152,16 @@ void setup() {
   checkCanWrite();
   // debug(F("Initializing SD card..."));
   if (!SD.begin(SD_CS)) {
-    // debug(F("initialization SD failed!"));
+     //Serial.println(F("initialization SD failed!"));
     blink();
   } else {
+    //String s = getRandomFileName();
+    //Serial.println(s);
     myFile = SD.open(getRandomFileName(), FILE_WRITE);
-    if (!myFile) blink();
+    if (!myFile){
+      //Serial.println("File error");
+      blink();
+    }
   }
   //debug(F("initialization SD done."));
 
@@ -164,13 +170,18 @@ void setup() {
 }
 
 String getRandomFileName() {
+  // 8.3 file format!
+  // generate string based on ASCII 
+  // 48 '0' till 57 '9'
+  // 65 'A' till 90 'Z'
+  // 97 'a' till 122 'z'
   String s = "";
-  for (int i = 0; i < 12; i++) {
-    byte randomValue = random(0, 37);
-    char letter = randomValue + 'a';
-    if (randomValue > 26) {
-      letter = (randomValue - 26) + '0';
-    }
+  for (int i = 0; i < 8; i++) {
+    byte r = random(0, 3);
+    char letter = '0';
+    if(r==0) letter = (char) random(48, 58);
+    else if(r==1) letter = (char) random(65, 91);
+    else if(r==2) letter = (char) random(97, 123);
     s.concat(letter);
   }
   s.concat(".csv");
