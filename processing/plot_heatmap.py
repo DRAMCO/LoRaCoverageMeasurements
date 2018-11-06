@@ -27,63 +27,139 @@ from folium.map import Marker
 from folium.plugins import HeatMap, MarkerCluster
 
 import util as util
+import json
 
-PLOT_SNR = False
-PLOT_RSS = not PLOT_SNR
-
-
-time_string_file = "2018_10_31"
+grid_size = 50
 
 currentDir = os.path.dirname(os.path.abspath(__file__))
+path_to_measurements = os.path.abspath(os.path.join(
+    currentDir, '..', 'data'))
 input_path = os.path.abspath(os.path.join(
     currentDir, '..', 'result'))
-input_file = "preprocessed_data_{}.pkl".format(time_string_file)
-input_file_path = os.path.join(input_path, input_file)
+input_file_name = "preprocessed_data.pkl"
 
-for_map = pd.read_pickle(input_file_path)
-for_map = util.onlyPackets(for_map)
+with open(os.path.join(path_to_measurements, "measurements.json")) as f:
+    config = json.load(f)
+    measurements = config["measurements"]
+    for measurement in measurements:
+        print("--------------------- HEATMP {} ---------------------".format(measurement))
+        CENTER = config[measurement]["center"]
+        input_file_path = os.path.join(
+            input_path, measurement, input_file_name)
+        for_map = pd.read_pickle(input_file_path)
+        for_map = util.onlyPackets(for_map)
+
+        hmap = folium.Map(location=CENTER, zoom_start=18,
+                          tiles="cartodbpositron", control_scale=True)
+
+        circle = folium.Circle(
+            radius=1,
+            location=CENTER,
+            color='crimson',
+            fill=True,
+            fill_color='crimson'
+        ).add_to(hmap)
+
+        grid, colormap = util.get_geojson_grid(
+            for_map, grid_size, True)
+
+        hmap.add_child(colormap)
+
+        for i, geo_json in enumerate(grid):
+            gj = folium.GeoJson(geo_json,
+                                style_function=lambda feature: {
+                                    'fillColor': colormap(feature["properties"]["val"]),
+                                    'weight': 1,
+                                    'opacity': 0,
+                                    'fillOpacity': 0.55 if feature["properties"]["show"] else 0,
+                                    'color': 'white'
+                                }, overlay=True)
+
+            hmap.add_child(gj)
+
+        output_file = os.path.join(input_path, measurement, "heatmap_SNR.html")
+        hmap.save(output_file)
+        print(" Saving to {}".format(output_file))
 
 
-output_file_name = "heatmap_SNR.html" if PLOT_SNR else "heatmap_RSS.html"
-output_file = os.path.abspath(os.path.join(
-    currentDir, '..', 'result', output_file_name))
+        hmap = folium.Map(location=CENTER, zoom_start=18,
+                          tiles="cartodbpositron", control_scale=True)
 
-grid_size = 25
+        circle = folium.Circle(
+            radius=1,
+            location=CENTER,
+            color='crimson',
+            fill=True,
+            fill_color='crimson'
+        ).add_to(hmap)
+
+        grid, colormap = util.get_geojson_grid(
+            for_map, grid_size, False)
+
+        hmap.add_child(colormap)
+
+        for i, geo_json in enumerate(grid):
+            gj = folium.GeoJson(geo_json,
+                                style_function=lambda feature: {
+                                    'fillColor': colormap(feature["properties"]["val"]),
+                                    'weight': 1,
+                                    'opacity': 0,
+                                    'fillOpacity': 0.55 if feature["properties"]["show"] else 0,
+                                    'color': 'white'
+                                }, overlay=True)
+
+            hmap.add_child(gj)
+
+        output_file = os.path.join(input_path, measurement, "heatmap_RSS.html")
+        hmap.save(output_file)
+        print(" Saving to {}".format(output_file))
 
 
-CENTER = [51.0595576, 3.7085241]
-
-# for_map = for_map[(for_map['time'].dt.day == 30) | (
- #   for_map['time'].dt.day == 31)]  # filter only today
-
-hmap = folium.Map(location=CENTER, zoom_start=18,  tiles="cartodbpositron", control_scale = True)
-
-folium.Circle(
-    radius=1,
-    location=CENTER,
-    color='crimson',
-    fill=True,
-    fill_color='crimson'
-).add_to(hmap)
+        print("--------------------- DONE HEATMAP ---------------------")
 
 
-grid, colormap = util.get_geojson_grid(
-    for_map, grid_size, PLOT_SNR)
-hmap.add_child(colormap)
+# currentDir = os.path.dirname(os.path.abspath(__file__))
 
-for i, geo_json in enumerate(grid):
-    gj = folium.GeoJson(geo_json,
-                        style_function=lambda feature: {
-                            'fillColor': colormap(feature["properties"]["val"]),
-                            'weight': 1,
-                            'opacity': 0,
-                            'fillOpacity': 0.55 if feature["properties"]["show"] else 0,
-                            'color': 'white'
-                        }, overlay=True)
 
-    hmap.add_child(gj)
+# output_file_name = "heatmap_SNR.html" if PLOT_SNR else "heatmap_RSS.html"
+# output_file = os.path.abspath(os.path.join(
+#     currentDir, '..', 'result', 'seaside', output_file_name))
 
-# folium.PolyLine(list(zip(for_map_gps.lat.values, for_map_gps.lon.values)),
-#                color="red", weight=2, opacity=0.4).add_to(hmap)
 
-hmap.save(output_file)
+# conf_file = os.path.abspath(os.path.join(
+#     currentDir, '..', 'data', 'seaside', 'all', 'conf.json'))
+# with open(conf_file) as f:
+#     data = json.load(f)
+# CENTER = data["center"]
+
+# hmap = folium.Map(location=CENTER, zoom_start=18,  tiles="cartodbpositron", control_scale = True)
+
+# folium.Circle(
+#     radius=1,
+#     location=CENTER,
+#     color='crimson',
+#     fill=True,
+#     fill_color='crimson'
+# ).add_to(hmap)
+
+
+# grid, colormap = util.get_geojson_grid(
+#     for_map, grid_size, PLOT_SNR)
+# hmap.add_child(colormap)
+
+# for i, geo_json in enumerate(grid):
+#     gj = folium.GeoJson(geo_json,
+#                         style_function=lambda feature: {
+#                             'fillColor': colormap(feature["properties"]["val"]),
+#                             'weight': 1,
+#                             'opacity': 0,
+#                             'fillOpacity': 0.55 if feature["properties"]["show"] else 0,
+#                             'color': 'white'
+#                         }, overlay=True)
+
+#     hmap.add_child(gj)
+
+# # folium.PolyLine(list(zip(for_map_gps.lat.values, for_map_gps.lon.values)),
+# #                color="red", weight=2, opacity=0.4).add_to(hmap)
+
+# hmap.save(output_file)
