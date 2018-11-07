@@ -44,7 +44,7 @@
 #include <SPI.h>
 #include <SD.h>
 
-//#define ONLY_SF_7
+#define ONLY_SF                   12
 
 #define POWER_ENABLE_PIN          8
 #define GPS_RX_PIN                7
@@ -58,12 +58,13 @@
 #define GPS_BAUD                  9600
 #define MAX_SETTINGS              3
 #define RANDOM_PIN                A3
+#define LED_PIN                   A0
 
 
 float FREQ = 869.525;
 
-#define DEBUG
-#define DEBUG_ERR
+//#define DEBUG
+//#define DEBUG_ERR
 
 // be sure that DEBUG ERR is defined if DEBUG is on
 //#ifdef DEBUG
@@ -122,9 +123,9 @@ void blink() {
     myFile.close();
   }
   while (1) {
-    digitalWrite(A0, HIGH);
+    digitalWrite(LED_PIN, HIGH);
     delay(200);
-    digitalWrite(A0, LOW);
+    digitalWrite(LED_PIN, LOW);
     delay(200);
   }
 }
@@ -133,11 +134,14 @@ void blink() {
 
 void setup() {
 
-  pinMode(A0, OUTPUT);
-  digitalWrite(A0, LOW);
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
   randomSeed(analogRead(RANDOM_PIN));
   checkCanWrite();
-  //Serial.begin(9600);
+
+  #ifdef DEBUG
+  Serial.begin(9600);
+  #endif
 
   // Begin serial connection to the GPS device
   ss.begin(GPS_BAUD);
@@ -150,15 +154,19 @@ void setup() {
   initLoRa();
 
   checkCanWrite();
-  // debug(F("Initializing SD card..."));
+  #ifdef DEBUG
+   debug(F("Initializing SD card..."));
+  #endif
   if (!SD.begin(SD_CS)) {
-     //Serial.println(F("initialization SD failed!"));
+    #ifdef DEBUG
+    Serial.println(F("initialization SD failed!"));
+    #endif
     blink();
   } else {
     //String s = getRandomFileName();
     //Serial.println(s);
     myFile = SD.open(getRandomFileName(), FILE_WRITE);
-    if (!myFile){
+    if (!myFile) {
       //Serial.println("File error");
       blink();
     }
@@ -171,7 +179,7 @@ void setup() {
 
 String getRandomFileName() {
   // 8.3 file format!
-  // generate string based on ASCII 
+  // generate string based on ASCII
   // 48 '0' till 57 '9'
   // 65 'A' till 90 'Z'
   // 97 'a' till 122 'z'
@@ -179,9 +187,9 @@ String getRandomFileName() {
   for (int i = 0; i < 8; i++) {
     byte r = random(0, 3);
     char letter = '0';
-    if(r==0) letter = (char) random(48, 58);
-    else if(r==1) letter = (char) random(65, 91);
-    else if(r==2) letter = (char) random(97, 123);
+    if (r == 0) letter = (char) random(48, 58);
+    else if (r == 1) letter = (char) random(65, 91);
+    else if (r == 2) letter = (char) random(97, 123);
     s.concat(letter);
   }
   s.concat(".csv");
@@ -287,17 +295,25 @@ void loop() {
 void checkRx() {
   // Check if LoRa packet is received
   if (receivedFlag) {
-    digitalWrite(A0, HIGH);
+    digitalWrite(LED_PIN, HIGH);
     receivePacket();
     receivedFlag = false;
-    digitalWrite(A0, LOW);
+    digitalWrite(LED_PIN, LOW);
   }
 }
 
 void hopToDifferentSF() {
-#ifdef ONLY_SF_7
+#ifdef ONLY_SF
+#if ONLY_SF == 7
   if (current_spreading_factor_id != 0) current_spreading_factor_id = 0;
   else return;
+#elif ONLY_SF == 9
+  if (current_spreading_factor_id != 1) current_spreading_factor_id = 1;
+  else return;
+#elif ONLY_SF == 12
+  if (current_spreading_factor_id != 2) current_spreading_factor_id = 2;
+  else return;
+#endif
 #else
   current_spreading_factor_id = (current_spreading_factor_id + 1) % MAX_SETTINGS;
 #endif
