@@ -44,7 +44,8 @@
 #include <SPI.h>
 #include <SD.h>
 
-#define ONLY_SF                   12
+// uncomment if you want to listen to one specific SF (7, 9, 12)
+//#define ONLY_SF                   12
 
 #define POWER_ENABLE_PIN          8
 #define GPS_RX_PIN                7
