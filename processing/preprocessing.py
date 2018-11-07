@@ -14,7 +14,6 @@
            File: preprocessing.py
         Created: 2018-10-30
          Author: Gilles Callebaut
-        Version: 1.0
     Description: Preprocessing raw data coming from Arduino Receiver
                  - concatenates different raw csv files
                  - filters data (e.g., values withouth GPS)

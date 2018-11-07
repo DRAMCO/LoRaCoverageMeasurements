@@ -14,12 +14,12 @@
            File: util.py
         Created: 2018-10-26
          Author: Gilles Callebaut
-        Version: 1.0
     Description:
 """
 
 
 import math
+from datetime import datetime
 
 import branca.colormap as cm
 import matplotlib as mpl
@@ -196,6 +196,15 @@ def addDistanceTo(df: pd.DataFrame, origin):
 
 
 def filter(data):
+    total_rows = data.shape[0]
+    current_rows_data = data[data.isPacket > 0].shape[0]
+    print(" Packet points {0}/{1} {2:.1f}% rows".format(current_rows_data,
+                                                        total_rows, (current_rows_data/total_rows)*100))
+
+    with_gps_data = data[(data.sat > 0) & data.isPacket > 0].shape[0]
+    print(" Packet points with GPS {0}/{1} {2:.1f}% rows".format(
+        with_gps_data, current_rows_data, (with_gps_data/current_rows_data)*100))
+
     data = data[data.sat > 0]
     data = data[data.ageValid > 0]
     data = data[data.hdopVal < 75]
@@ -203,8 +212,22 @@ def filter(data):
     data = data[data.pdopVal < 75]
     data = data[data.locValid > 0]
     data = data[data.ageValid > 0]
+
+    print(" Packet points with GPS without RSS filtering {0}/{1} {2:.1f}% rows".format(
+        data[data.isPacket > 0].shape[0], current_rows_data, (data[data.isPacket > 0].shape[0]/current_rows_data)*100))
+
+    data['time'] = pd.to_datetime(
+        data['time'], format='%m/%d/%Y %H:%M:%S ', utc=True)
+    data = data.set_index(['time'])
+
+    start_date = '20181029'
+    #end_date = datetime.strptime('10/29/2019', '%m/%d/%Y')
+    #data = data.between_time(start_date, end_date, include_start=True)
+    data = data.loc[start_date:, :]
 #
     data = data[(data.sf == 12) | (data.sf == 9) | (data.sf == 7)]
+    print(" Packet points with GPS with SF filtering {0}/{1} {2:.1f}% rows".format(
+        data[data.isPacket > 0].shape[0], current_rows_data, (data[data.isPacket > 0].shape[0]/current_rows_data)*100))
 
     # Correction factor as described in https://cdn-shop.adafruit.com/product-files/3179/sx1276_77_78_79.pdf
 
@@ -222,7 +245,7 @@ def filter(data):
     snr_correction[snr_correction > 0] = 0
     rssi_correction = packet_rssi + snr_correction*0.25
 
-    data.loc[:,'correction_factor'] = 1
+    data.loc[:, 'correction_factor'] = 1
     data.loc[data["rssi"] > -100, 'correction_factor'] = 16/15
     rssi_correction = packet_rssi*data['correction_factor']
 
@@ -231,9 +254,13 @@ def filter(data):
     data = data[data["rss"] < 20]
     # remove unneeded columns
     cols = ["sat", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal", "locValid", "age",
-               "ageValid", "altValid", "course", "courseValid", "speed", "speedValid", "rssi", "correction_factor"]
-    cols = [c for c in cols if c in data.index]
-    data.drop(cols)
+            "ageValid", "altValid", "course", "courseValid", "speed", "speedValid", "rssi", "correction_factor"]
+    cols = [c for c in cols if c in data.columns]
+    data.drop(columns=cols)
+
+    current_rows_data_after_filtering = data[data.isPacket > 0].shape[0]
+    print(" Packet points after filtering {0}/{1} {2:.1f}% rows".format(
+        current_rows_data_after_filtering, current_rows_data, (current_rows_data_after_filtering/current_rows_data)*100))
 
     return data
 

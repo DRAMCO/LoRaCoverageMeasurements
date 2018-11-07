@@ -14,10 +14,10 @@
            File: plt_heatmap.py
         Created: 2018-10-26
          Author: Gilles Callebaut
-        Version: 1.0
     Description:
 """
 
+import json
 import os
 
 import folium
@@ -27,7 +27,6 @@ from folium.map import Marker
 from folium.plugins import HeatMap, MarkerCluster
 
 import util as util
-import json
 
 grid_size = 50
 
@@ -81,7 +80,6 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
         hmap.save(output_file)
         print(" Saving to {}".format(output_file))
 
-
         hmap = folium.Map(location=CENTER, zoom_start=18,
                           tiles="cartodbpositron", control_scale=True)
 
@@ -113,7 +111,6 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
         output_file = os.path.join(input_path, measurement, "heatmap_RSS.html")
         hmap.save(output_file)
         print(" Saving to {}".format(output_file))
-
 
         print("--------------------- DONE HEATMAP ---------------------")
 

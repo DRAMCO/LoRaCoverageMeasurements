@@ -14,24 +14,25 @@
            File: plt_heatmap.py
         Created: 2018-10-30
          Author: Gilles Callebaut
-        Version: 1.0
     Description:
 """
 
+import json
 import os
+from math import sqrt
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import seaborn as sns
-from matplotlib.ticker import ScalarFormatter, FormatStrFormatter
 import numpy as np
 import pandas as pd
+import seaborn as sns
+from matplotlib.ticker import FormatStrFormatter, ScalarFormatter
 from scipy import stats
 
-from math import sqrt
+import util as util
+
 SPINE_COLOR = 'gray'
 
-import util as util
 
 
 def latexify(fig_width=None, fig_height=None, columns=1):
@@ -66,16 +67,15 @@ def latexify(fig_width=None, fig_height=None, columns=1):
         fig_height = MAX_HEIGHT_INCHES
 
     params = {
-        # 'backend': 'ps',
-
+        'backend': 'ps',
         'axes.labelsize': 8,
         'axes.titlesize': 8,
-        'legend.fontsize': 8,  # was 10
+        'legend.fontsize': 8,
         'xtick.labelsize': 8,
         'ytick.labelsize': 8,
-        # 'text.usetex': True,
-        # "pgf.rcfonts": False,
-        # "pgf.texsystem": "pdflatex",
+        'text.usetex': True,
+        "pgf.rcfonts": False,
+        "pgf.texsystem": "pdflatex",
         'figure.figsize': [fig_width, fig_height],
         'font.family': 'serif'
     }
@@ -104,111 +104,92 @@ def format_axes(ax):
 latexify()
 
 
-time_string_file = "2018_10_31"
-
 currentDir = os.path.dirname(os.path.abspath(__file__))
+path_to_measurements = os.path.abspath(os.path.join(
+    currentDir, '..', 'data'))
 input_path = os.path.abspath(os.path.join(
     currentDir, '..', 'result'))
-input_file = "preprocessed_data_{}.pkl".format(time_string_file)
-input_file_path = os.path.join(input_path, input_file)
+input_file_name = "preprocessed_data.pkl"
 
-output_fig_pdf = os.path.join(
-    input_path, 'path_loss_model_{}.pdf'.format(time_string_file))
-output_fig_pgf = os.path.join(
-    input_path, 'path_loss_model_{}.pgf'.format(time_string_file))
+with open(os.path.join(path_to_measurements, "measurements.json")) as f:
+    config = json.load(f)
+    measurements = config["measurements"]
+    for measurement in measurements:
+        print("--------------------- PATH LOSS MODEL {} ---------------------".format(measurement))
+        CENTER = config[measurement]["center"]
+        d0 = config[measurement]["d0"]
+        pl0 = config[measurement]["pl0"]
 
-df = pd.read_pickle(input_file_path)
-df = util.onlyPackets(df)
+        input_file_path = os.path.join(
+            input_path, measurement, input_file_name)
 
-#for_map.plot.scatter(x='distance', y='pl_db', c='sf',  colormap='viridis')
-# plt.show()
-#
-d0 = 20  # old data
-#
-df = df[df.distance > d0]
-df['distance_log'] = 10*np.log10(df.distance/20)
+        df = pd.read_pickle(input_file_path)
+        df = util.onlyPackets(df)
 
+        df = df[df.distance > d0]
+        df['distance_log'] = 10*np.log10(df.distance/20)
 
-slope, intercept, r_value, p_value, std_err = stats.linregress(
-    df['distance_log'], df['pl_db'])
-pl0 = intercept
-n = slope
+        slope, intercept, r_value, p_value, std_err = stats.linregress(
+            df['distance_log'], df['pl_db'])
+        pl0 = intercept
+        n = slope
 
-print(slope, intercept, r_value, p_value, std_err)
+        print(slope, intercept, r_value, p_value, std_err)
 
+        df['epl'] = n*df['distance_log']+pl0
+        df['epl_free'] = 2*df['distance_log']+pl0
+        sigma = np.std(df['epl'] - df['pl_db'])
 
-df['epl'] = n*df['distance_log']+pl0
-df['epl_free'] = 2*df['distance_log']+pl0
-sigma = np.std(df['epl'] - df['pl_db'])
+        df['epl_log'] = 10*n * \
+            np.log10(df['distance'])+(-10*n*np.log10(d0) + pl0)
+        df['epl_free_log'] = 10*2 * \
+            np.log10(df['distance'])+(-10*2*np.log10(d0) + pl0)
 
-df['epl_log'] = 10*n*np.log10(df['distance'])+(-10*n*np.log10(d0) + pl0)
-df['epl_free_log'] = 10*2*np.log10(df['distance'])+(-10*2*np.log10(d0) + pl0)
+        fig = plt.figure(figsize=(4, 3))
+        ax = fig.add_subplot(1, 1, 1)
+        plt.xscale('log')
+        ax.xaxis.set_major_formatter(ScalarFormatter())
+        # ax.xaxis.set_minor_formatter(FormatStrFormatter("%.1f"))
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
 
+        idx = df['distance'] < 300
+        ax.scatter(df['distance'][idx], df['pl_db'][idx],
+                   marker='x', label="Measured Path Loss", s=1, c='darkorange')
+        idx = (df['distance'] > 300) | (df['distance'] == 300)
+        ax.scatter(df['distance'][idx], df['pl_db'][idx],
+                   marker='x', label="Measured Path Loss", s=1, c='0.50')
+        ax.set_xlabel('Log distance (m)')
+        ax.set_ylabel('Path Loss (dB)')
 
-fig = plt.figure(figsize=(4, 3))
-ax = fig.add_subplot(1, 1, 1)
-plt.xscale('log')
-ax.xaxis.set_major_formatter(ScalarFormatter())
-# ax.xaxis.set_minor_formatter(FormatStrFormatter("%.1f"))
-ax.spines['right'].set_visible(False)
-ax.spines['top'].set_visible(False)
+        x, y = zip(*sorted(zip(df['distance'], df['epl_log'])))
+        ax.plot(x, y, ls='-', label="Expected Path Loss",
+                linewidth=1.5, color='gray')
+        x, y = zip(*sorted(zip(df['distance'], df['epl_free_log'])))
+        ax.plot(x, y, ls='dashed', label="Free Space Path Loss",
+                linewidth=1.5, color='dimgray')
 
-idx = df['distance'] < 300
-ax.scatter(df['distance'][idx], df['pl_db'][idx],
-           marker='x', label="Measured Path Loss", s=1, c='darkorange')
-idx = (df['distance'] > 300) | (df['distance'] == 300)
-ax.scatter(df['distance'][idx], df['pl_db'][idx],
-           marker='x', label="Measured Path Loss", s=1, c='0.50')
-ax.set_xlabel('Log distance (m)')
-ax.set_ylabel('Path Loss (dB)')
+        idx = df['distance'] < 300
+        slope, intercept, r_value, p_value, std_err = stats.linregress(
+            df['distance_log'][idx], df['pl_db'][idx])
+        pl0 = intercept
+        n = slope
+        print(slope, intercept, r_value, p_value, std_err)
+        df['epl_log'] = 10*n * \
+            np.log10(df['distance'])+(-10*n*np.log10(d0) + pl0)
 
+        x, y = zip(*sorted(zip(df['distance'], df['epl_log'])))
+        ax.plot(x, y, ls='-', label="Expected Path Loss (without gray measurements)",
+                linewidth=1.5, color='k')
 
-x, y = zip(*sorted(zip(df['distance'], df['epl_log'])))
-ax.plot(x, y, ls='-', label="Expected Path Loss",
-        linewidth=1.5, color='gray')
-x, y = zip(*sorted(zip(df['distance'], df['epl_free_log'])))
-ax.plot(x, y, ls='dashed', label="Free Space Path Loss",
-        linewidth=1.5, color='dimgray')
+        plt.legend(framealpha=0.0)
 
-idx = df['distance'] < 300
-slope, intercept, r_value, p_value, std_err = stats.linregress(
-    df['distance_log'][idx], df['pl_db'][idx])
-pl0 = intercept
-n = slope
-print(slope, intercept, r_value, p_value, std_err)
-df['epl_log'] = 10*n*np.log10(df['distance'])+(-10*n*np.log10(d0) + pl0)
+        format_axes(ax)
 
-x, y = zip(*sorted(zip(df['distance'], df['epl_log'])))
-ax.plot(x, y, ls='-', label="Expected Path Loss (without gray measurements)",
-        linewidth=1.5, color='k')
+        #plt.savefig(output_fig_pdf, format='pdf', bbox_inches='tight')
+        #plt.savefig(output_fig_pgf, format='pgf', bbox_inches='tight')
 
-
-plt.legend(framealpha=0.0)
-
-# def format_func(value, tick_number):
-#    return 10**(value/10)*d0
-
-# ax.xaxis.set_major_formatter(plt.FuncFormatter(format_func))
-# print(n)
-# print(pl0)
-
-
-# print(sigma)
-#sns.scatterplot(x='distance_log', y='epl', data=df)
-#plt.scatter(x=df.distance_log, y=df.epl)
-#
-#plt.plot([0, df['distance'].max()], [136+20, 136+20])
-#plt.plot([0, df['distance'].max()], [120+20, 120+20])
-#plt.plot([0, df['distance'].max()], [125+20, 125+20])
-format_axes(ax)
-# plt.tight_layout()
-# plt.show()
-#
-#plt.savefig(output_fig_pdf, format='pdf', bbox_inches='tight')
-#plt.savefig(output_fig_pgf, format='pgf', bbox_inches='tight')
-
-
-fig = plt.figure(figsize=(4, 3))
-ax = fig.add_subplot(1, 1, 1)
-ax.scatter(df['distance'], df['snr'], color='0.50', marker='x')
-plt.show()
+        fig = plt.figure(figsize=(4, 3))
+        ax = fig.add_subplot(1, 1, 1)
+        ax.scatter(df['distance'], df['snr'], color='0.50', marker='x')
+        plt.show()
