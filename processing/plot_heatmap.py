@@ -33,92 +33,105 @@ grid_size = 50
 currentDir = os.path.dirname(os.path.abspath(__file__))
 path_to_measurements = os.path.abspath(os.path.join(
     currentDir, '..', 'data'))
+processing_path = os.path.abspath(os.path.join(
+    currentDir, '..', 'processing'))
 input_path = os.path.abspath(os.path.join(
     currentDir, '..', 'result'))
 input_file_name = "preprocessed_data.pkl"
 
-with open(os.path.join(path_to_measurements, "measurements.json")) as f:
-    config = json.load(f)
-    measurements = config["measurements"]
-    for measurement in measurements:
-        print("--------------------- HEATMP {} ---------------------".format(measurement))
-        CENTER = config[measurement]["center"]
-        input_file_path = os.path.join(
-            input_path, measurement, input_file_name)
-        for_map = pd.read_pickle(input_file_path)
-        for_map = util.onlyPackets(for_map)
 
-        hmap = folium.Map(location=CENTER, zoom_start=18,
-                          tiles="cartodbpositron", control_scale=True)
+with open(os.path.join(processing_path, "conf.json")) as config_file:
+    config_plot = json.load(config_file)["heatmap"]
+    plot_snr = config_plot["plot_snr"]
+    plot_rss = config_plot["plot_rss"]
 
-        circle = folium.Circle(
-            radius=1,
-            location=CENTER,
-            color='crimson',
-            fill=True,
-            fill_color='crimson'
-        ).add_to(hmap)
+    with open(os.path.join(path_to_measurements, "measurements.json")) as f:
+        config_measurement = json.load(f)
+        measurements = config_measurement["measurements"]
+        for measurement in measurements:
+            print(
+                "--------------------- HEATMP {} ---------------------".format(measurement))
+            CENTER = config_measurement[measurement]["center"]
+            input_file_path = os.path.join(
+                input_path, measurement, input_file_name)
+            for_map = pd.read_pickle(input_file_path)
+            for_map = util.onlyPackets(for_map)
 
-        grid, colormap = util.get_geojson_grid(
-            for_map, grid_size, True)
+            if plot_snr:
 
-        hmap.add_child(colormap)
+                hmap = folium.Map(location=CENTER, zoom_start=18,
+                                  tiles="cartodbpositron", control_scale=True)
 
-        for i, geo_json in enumerate(grid):
-            gj = folium.GeoJson(geo_json,
-                                style_function=lambda feature: {
-                                    'fillColor': colormap(feature["properties"]["val"]),
-                                    'weight': 1,
-                                    'opacity': 0,
-                                    'fillOpacity': 0.55 if feature["properties"]["show"] else 0,
-                                    'color': 'white'
-                                }, overlay=True)
+                circle = folium.Circle(
+                    radius=1,
+                    location=CENTER,
+                    color='crimson',
+                    fill=True,
+                    fill_color='crimson'
+                ).add_to(hmap)
 
-            hmap.add_child(gj)
+                grid, colormap = util.get_geojson_grid(
+                    for_map, grid_size, True)
 
-        output_file = os.path.join(input_path, measurement, "heatmap_SNR.html")
-        hmap.save(output_file)
-        print(" Saving to {}".format(output_file))
+                hmap.add_child(colormap)
 
-        hmap = folium.Map(location=CENTER, zoom_start=18,
-                          tiles="cartodbpositron", control_scale=True)
+                for i, geo_json in enumerate(grid):
+                    gj = folium.GeoJson(geo_json,
+                                        style_function=lambda feature: {
+                                            'fillColor': colormap(feature["properties"]["val"]),
+                                            'weight': 1,
+                                            'opacity': 0,
+                                            'fillOpacity': 0.55 if feature["properties"]["show"] else 0,
+                                            'color': 'white'
+                                        }, overlay=True)
 
-        circle = folium.Circle(
-            radius=1,
-            location=CENTER,
-            color='crimson',
-            fill=True,
-            fill_color='crimson'
-        ).add_to(hmap)
+                    hmap.add_child(gj)
 
-        grid, colormap = util.get_geojson_grid(
-            for_map, grid_size, False)
+                output_file = os.path.join(
+                    input_path, measurement, "heatmap_SNR.html")
+                hmap.save(output_file)
+                print(" Saving to {}".format(output_file))
 
-        hmap.add_child(colormap)
+            if plot_rss:
 
-        for i, geo_json in enumerate(grid):
-            gj = folium.GeoJson(geo_json,
-                                style_function=lambda feature: {
-                                    'fillColor': colormap(feature["properties"]["val"]),
-                                    'weight': 1,
-                                    'opacity': 0,
-                                    'fillOpacity': 0.55 if feature["properties"]["show"] else 0,
-                                    'color': 'white'
-                                }, overlay=True)
+                hmap = folium.Map(location=CENTER, zoom_start=18,
+                                  tiles="cartodbpositron", control_scale=True)
 
-            hmap.add_child(gj)
+                circle = folium.Circle(
+                    radius=1,
+                    location=CENTER,
+                    color='crimson',
+                    fill=True,
+                    fill_color='crimson'
+                ).add_to(hmap)
 
-        output_file = os.path.join(input_path, measurement, "heatmap_RSS.html")
-        hmap.save(output_file)
-        print(" Saving to {}".format(output_file))
+                grid, colormap = util.get_geojson_grid(
+                    for_map, grid_size, False)
 
-        print("--------------------- DONE HEATMAP ---------------------")
+                hmap.add_child(colormap)
 
+                for i, geo_json in enumerate(grid):
+                    gj = folium.GeoJson(geo_json,
+                                        style_function=lambda feature: {
+                                            'fillColor': colormap(feature["properties"]["val"]),
+                                            'weight': 1,
+                                            'opacity': 0,
+                                            'fillOpacity': 0.55 if feature["properties"]["show"] else 0,
+                                            'color': 'white'
+                                        }, overlay=True)
 
-# currentDir = os.path.dirname(os.path.abspath(__file__))
+                    hmap.add_child(gj)
 
+                output_file = os.path.join(
+                    input_path, measurement, "heatmap_RSS.html")
+                hmap.save(output_file)
+                print(" Saving to {}".format(output_file))
 
-# output_file_name = "heatmap_SNR.html" if PLOT_SNR else "heatmap_RSS.html"
+            print("--------------------- DONE HEATMAP ---------------------")
+
+    # currentDir = os.path.dirname(os.path.abspath(__file__))
+
+    # output_file_name = "heatmap_SNR.html" if PLOT_SNR else "heatmap_RSS.html"
 # output_file = os.path.abspath(os.path.join(
 #     currentDir, '..', 'result', 'seaside', output_file_name))
 

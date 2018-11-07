@@ -1,0 +1,7 @@
+{
+	"heatmap" : {
+		"grid_size" : 50,
+		"plot_snr" : true,
+		"plot_rss" : true
+	}
+}
