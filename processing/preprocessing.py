@@ -33,8 +33,10 @@ import pandas as pd
 import util as util
 import json
 
-HEADER = ["time", "sat", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal", "lat", "lon", "locValid", "age",
-          "ageValid", "alt", "altValid", "course", "courseValid", "speed", "speedValid", "rssi", "snr", "freqError",  "sf", "isPacket"]
+HEADER_LONG = ["time", "sat", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal", "lat", "lon", "locValid", "age",
+               "ageValid", "alt", "altValid", "course", "courseValid", "speed", "speedValid", "rssi", "snr", "freqError",  "sf", "isPacket"]
+HEADER_SHORT = ["time", "sat", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal", "lat", "lon", "locValid", "age",
+          "ageValid", "alt", "altValid", "rssi", "snr",  "sf", "isPacket"]
 
 currentDir = os.path.dirname(os.path.abspath(__file__))
 path_to_measurements = os.path.abspath(os.path.join(
@@ -51,13 +53,16 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
 
         print("--------------------- PREPROCESSING {} ---------------------".format(measurement))
         size=0
+        df_from_each_file = []
         for file in all_files:
             size += os.path.getsize(file)
-        print(" Reading {0} files {1:.2f} kB".format(len(all_files), size/(1024)))
+        
+            df = pd.read_csv(file, sep=',', header=None,names=None)
+            df.columns = HEADER_LONG if(df.shape[1] == len(HEADER_LONG)) else HEADER_SHORT
+            df_from_each_file.append(df)
 
-        df_from_each_file=(pd.read_csv(f, sep=',', header=None,
-                                         names=HEADER) for f in all_files)
-        df=pd.concat(df_from_each_file, ignore_index=True)
+        df = pd.concat(df_from_each_file, ignore_index=True, sort=False)
+        print(" Reading {0} files {1:.2f} kB".format(len(all_files), size/(1024)))
         total_rows=df.shape[0]
 
         df=util.filter(df)
@@ -68,7 +73,7 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
 
 
         util.addDistanceTo(df, CENTER)
-        df=df[df['distance'] < 1000]
+        df=df[df['distance'] < 100*1000]
         util.addPathLossTo(df)
         current_rows=df.shape[0]
         current_rows_data=df[df.isPacket > 0].shape[0]

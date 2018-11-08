@@ -26,7 +26,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import statsmodels.formula.api as smf
 from matplotlib.ticker import FormatStrFormatter, ScalarFormatter
+from statsmodels.sandbox.regression.predstd import wls_prediction_std
+from scipy.stats import shapiro
+from scipy.stats import normaltest
 from scipy import stats
 
 import util as util
@@ -100,8 +104,37 @@ def format_axes(ax):
 
     return ax
 
+def plot_normality(df):
+    alpha = 0.05
+    bin_size = 2
+    start = df["distance"].min()
+    end = df["distance"].max()
+    bin_pointer = start -1
 
-latexify()
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+
+    while bin_pointer + bin_size < end:
+        bin_pointer = bin_pointer + 1
+        data_to_check = df[(df["distance"] < bin_pointer + bin_size) & (df["distance"]>= bin_pointer)]
+        if(data_to_check.shape[0] > 5 ):
+            stat, p = shapiro(data_to_check.pl_db)
+            # if(data_to_check.shape[0] > 20 ):
+            #     ax.scatter(bin_pointer, p, color='k')
+            # else:
+            ax.scatter(bin_pointer, p, color='red', alpha=data_to_check.shape[0]/20 if data_to_check.shape[0]/20 <1 else 1)
+            # if p > alpha:
+            #     print('T1: Statistics=%.3f, p=%.3f' % (stat, p))
+            #     print("distance [{},{}]".format(lower_bin, higher_bin))
+            # stat, p = normaltest(data_to_check.pl_db)
+            # if p > alpha:
+            #     print('T2: Statistics=%.3f, p=%.3f' % (stat, p))
+            #     print("distance [{},{}]".format(lower_bin, higher_bin))
+    
+    plt.plot([start, end], [alpha, alpha], color='k', linestyle='-', linewidth=2)
+    plt.show()
+
+#latexify()
 
 
 currentDir = os.path.dirname(os.path.abspath(__file__))
@@ -120,6 +153,8 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
         d0 = config[measurement]["d0"]
         pl0 = config[measurement]["pl0"]
 
+        
+
         input_file_path = os.path.join(
             input_path, measurement, input_file_name)
 
@@ -128,6 +163,39 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
 
         df = df[df.distance > d0]
         df['distance_log'] = 10*np.log10(df.distance/20)
+
+        #results = smf.ols('pl_db ~ distance_log', data=df[(df["distance"] < 105) & (df["distance"] > 100)]).fit()
+
+        #lower_bins = np.arange(20, 1000, 5)
+        #higher_bins = np.arange(20+10, 1000+10, 5)
+        #alpha = 0.05
+        #for lower_bin, higher_bin in zip(lower_bins,higher_bins):
+        #    data_to_check = df[(df["distance"] < higher_bin) & (df["distance"]> lower_bin)]
+        #    if(data_to_check.shape[0] > 20 ):
+        #        stat, p = shapiro(data_to_check.pl_db)
+        #        if p > alpha:
+        #            print('T1: Statistics=%.3f, p=%.3f' % (stat, p))
+        #            print("distance [{},{}]".format(lower_bin, higher_bin))
+        #        stat, p = normaltest(data_to_check.pl_db)
+        #        if p > alpha:
+        #            print('T2: Statistics=%.3f, p=%.3f' % (stat, p))
+        #            print("distance [{},{}]".format(lower_bin, higher_bin))
+
+        plot_normality(df)
+
+        fig = plt.figure(figsize=(4, 3))
+        ax = fig.add_subplot(1, 1, 1)
+
+        #prstd, iv_l, iv_u = wls_prediction_std(results)
+
+        
+        #ax.plot(df['distance'] , results.fittedvalues, 'r--.', label="OLS")
+        #ax.plot(df['distance'] , iv_u, 'r--')
+        #ax.plot(df['distance'] , iv_l, 'r--')
+        #ax.legend(loc='best');
+
+        # Inspect the results
+        #print(results.summary())
 
         slope, intercept, r_value, p_value, std_err = stats.linregress(
             df['distance_log'], df['pl_db'])
@@ -145,8 +213,7 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
         df['epl_free_log'] = 10*2 * \
             np.log10(df['distance'])+(-10*2*np.log10(d0) + pl0)
 
-        fig = plt.figure(figsize=(4, 3))
-        ax = fig.add_subplot(1, 1, 1)
+        
         plt.xscale('log')
         ax.xaxis.set_major_formatter(ScalarFormatter())
         # ax.xaxis.set_minor_formatter(FormatStrFormatter("%.1f"))

@@ -196,6 +196,7 @@ def addDistanceTo(df: pd.DataFrame, origin):
 
 
 def filter(data):
+    
     total_rows = data.shape[0]
     current_rows_data = data[data.isPacket > 0].shape[0]
     print(" Packet points {0}/{1} {2:.1f}% rows".format(current_rows_data,
@@ -216,14 +217,14 @@ def filter(data):
     print(" Packet points with GPS without RSS filtering {0}/{1} {2:.1f}% rows".format(
         data[data.isPacket > 0].shape[0], current_rows_data, (data[data.isPacket > 0].shape[0]/current_rows_data)*100))
 
-    data['time'] = pd.to_datetime(
+    data.loc[:, 'time'] = pd.to_datetime(
         data['time'], format='%m/%d/%Y %H:%M:%S ', utc=True)
     data = data.set_index(['time'])
-
-    start_date = '20181029'
-    #end_date = datetime.strptime('10/29/2019', '%m/%d/%Y')
-    #data = data.between_time(start_date, end_date, include_start=True)
-    data = data.loc[start_date:, :]
+#
+    #start_date = '20181029'
+    ##end_date = datetime.strptime('10/29/2019', '%m/%d/%Y')
+    ##data = data.between_time(start_date, end_date, include_start=True)
+    #data = data.loc[start_date:, :]
 #
     data = data[(data.sf == 12) | (data.sf == 9) | (data.sf == 7)]
     print(" Packet points with GPS with SF filtering {0}/{1} {2:.1f}% rows".format(
@@ -245,7 +246,7 @@ def filter(data):
     snr_correction[snr_correction > 0] = 0
     rssi_correction = packet_rssi + snr_correction*0.25
 
-    data.loc[:, 'correction_factor'] = 1
+    data.loc[:, 'correction_factor'] = 1 #data.add(pd.DataFrame(np.ones(data.shape[0]), index=data.index, columns=['correction_factor']), fill_value=0)
     data.loc[data["rssi"] > -100, 'correction_factor'] = 16/15
     rssi_correction = packet_rssi*data['correction_factor']
 

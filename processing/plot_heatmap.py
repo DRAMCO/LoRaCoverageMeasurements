@@ -28,7 +28,6 @@ from folium.plugins import HeatMap, MarkerCluster
 
 import util as util
 
-grid_size = 50
 
 currentDir = os.path.dirname(os.path.abspath(__file__))
 path_to_measurements = os.path.abspath(os.path.join(
@@ -42,6 +41,7 @@ input_file_name = "preprocessed_data.pkl"
 
 with open(os.path.join(processing_path, "conf.json")) as config_file:
     config_plot = json.load(config_file)["heatmap"]
+    grid_size = config_plot["grid_size"]
     plot_snr = config_plot["plot_snr"]
     plot_rss = config_plot["plot_rss"]
 
