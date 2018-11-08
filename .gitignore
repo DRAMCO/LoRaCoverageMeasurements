@@ -4,3 +4,5 @@ result/seaside/heatmap_SNR.html
 result/seaside/heatmap_SNR.html
 result/campus/heatmap_RSS.html
 result/campus/heatmap_SNR.html
+*.html
+*.pkl
