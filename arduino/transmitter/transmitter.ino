@@ -26,7 +26,7 @@
 
 #include <LoRaLibMod.h>
 
-#define SPREADING_FACTOR               9
+#define SPREADING_FACTOR               12
 
 
 #if SPREADING_FACTOR == 7
@@ -38,7 +38,7 @@
 
 #endif
 
-#define TP                              20
+#define TP                              2
 
 
 #define DEBUG

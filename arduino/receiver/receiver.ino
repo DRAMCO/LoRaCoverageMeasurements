@@ -45,7 +45,7 @@
 #include <SD.h>
 
 // uncomment if you want to listen to one specific SF (7, 9, 12)
-//#define ONLY_SF                   12
+#define ONLY_SF                   12
 
 #define POWER_ENABLE_PIN          8
 #define GPS_RX_PIN                7
@@ -64,13 +64,13 @@
 
 float FREQ = 869.525;
 
-//#define DEBUG
+#define DEBUG
 //#define DEBUG_ERR
 
 // be sure that DEBUG ERR is defined if DEBUG is on
-//#ifdef DEBUG
-//#define DEBUG_ERR
-//#endif
+#ifdef DEBUG
+#define DEBUG_ERR
+#endif
 
 
 // create instance of LoRa class using SX1278 module
@@ -117,20 +117,40 @@ uint32_t lastPacketReceived;
 
 volatile bool receivedFlag = false;
 
+bool hasFix = false;
+String fileName;
+
 
 void blink() {
   //Serial.println("in blink");
   if (myFile) {
     myFile.close();
   }
-  while (1) {
+  while (analogRead(CAN_WE_WRITE_PIN) > 25) {
     digitalWrite(LED_PIN, HIGH);
     delay(200);
     digitalWrite(LED_PIN, LOW);
     delay(200);
   }
+  myFile = SD.open(fileName, FILE_WRITE);
+  if (!myFile) {
+    Serial.println("File error");
+    blink();
+  }
 }
 
+
+
+void gpsFix() {
+  //Serial.println("in blink");
+
+  for (int i = 0; i < 3; i++) {
+    digitalWrite(LED_PIN, HIGH);
+    delay(1000);
+    digitalWrite(LED_PIN, LOW);
+    delay(1000);
+  }
+}
 
 
 void setup() {
@@ -140,9 +160,9 @@ void setup() {
   randomSeed(analogRead(RANDOM_PIN));
   checkCanWrite();
 
-  #ifdef DEBUG
+#ifdef DEBUG
   Serial.begin(9600);
-  #endif
+#endif
 
   // Begin serial connection to the GPS device
   ss.begin(GPS_BAUD);
@@ -155,20 +175,20 @@ void setup() {
   initLoRa();
 
   checkCanWrite();
-  #ifdef DEBUG
-   debug(F("Initializing SD card..."));
-  #endif
+#ifdef DEBUG
+  debug(F("Initializing SD card..."));
+#endif
   if (!SD.begin(SD_CS)) {
-    #ifdef DEBUG
+#ifdef DEBUG
     Serial.println(F("initialization SD failed!"));
-    #endif
+#endif
     blink();
   } else {
-    //String s = getRandomFileName();
-    //Serial.println(s);
-    myFile = SD.open(getRandomFileName(), FILE_WRITE);
+    fileName = getRandomFileName();
+    Serial.println(fileName);
+    myFile = SD.open(fileName, FILE_WRITE);
     if (!myFile) {
-      //Serial.println("File error");
+      Serial.println("File error");
       blink();
     }
   }
@@ -214,8 +234,18 @@ String getDateTimeString(TinyGPSDate &d, TinyGPSTime &t)
 
   smartDelay(0);
 }
+
 void writeToSD(bool packet) {
   checkCanWrite();
+
+  Serial.println("writing...");
+
+  if (!hasFix && gps.location.isValid()) {
+      gpsFix();
+      hasFix = true;
+    }
+  
+
 
   if (myFile) {
     myFile.print(getDateTimeString(gps.date, gps.time));
@@ -439,13 +469,13 @@ void loraSetFreq() {
 
 
 /* SERIAL output information */
-/*
-  void debug(String s) {
-  #ifdef DEBUG
+
+void debug(String s) {
+#ifdef DEBUG
   Serial.println(s);
-  #endif
-  }
-*/
+#endif
+}
+
 
 void error(String s) {
 #ifdef DEBUG_ERR
