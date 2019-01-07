@@ -218,7 +218,7 @@ def filter(data):
         data[data.isPacket > 0].shape[0], current_rows_data, (data[data.isPacket > 0].shape[0]/current_rows_data)*100))
 
     data.loc[:, 'time'] = pd.to_datetime(
-        data['time'], format='%m/%d/%Y %H:%M:%S ', utc=True)
+        data['time'], format='%m/%d/%Y %H:%M:%S ', utc=True, errors='coerce')
     data = data.set_index(['time'])
 #
     #start_date = '20181029'

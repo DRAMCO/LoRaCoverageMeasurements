@@ -1,7 +1,8 @@
 {
 	"measurements" : [
 		"campus",
-		"seaside"
+		"seaside",
+		"forest"
 	],
 
 	"campus" : {
@@ -12,6 +13,11 @@
 
 	"seaside" : {
 		"center": [51.149110, 2.716344],
+		"d0" : 20,
+		"pl0" : 100
+	},
+	"forest" : {
+		"center": [51.1638853, 3.5785536],
 		"d0" : 20,
 		"pl0" : 100
 	}

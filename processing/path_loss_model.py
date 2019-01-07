@@ -86,7 +86,6 @@ def latexify(fig_width=None, fig_height=None, columns=1):
 
     mpl.rcParams.update(params)
 
-
 def format_axes(ax):
 
     for spine in ['top', 'right']:
@@ -145,15 +144,15 @@ input_path = os.path.abspath(os.path.join(
 input_file_name = "preprocessed_data.pkl"
 
 with open(os.path.join(path_to_measurements, "measurements.json")) as f:
+    
     config = json.load(f)
     measurements = config["measurements"]
     for measurement in measurements:
         print("--------------------- PATH LOSS MODEL {} ---------------------".format(measurement))
+        output_fig_pgf = os.path.join(input_path, 'path_loss_{}.{}'.format(measurement, 'pgf'))
         CENTER = config[measurement]["center"]
-        d0 = config[measurement]["d0"]
-        pl0 = config[measurement]["pl0"]
-
-        
+        #d0 = config[measurement]["d0"]
+        #pl0 = config[measurement]["pl0"]
 
         input_file_path = os.path.join(
             input_path, measurement, input_file_name)
@@ -161,41 +160,17 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
         df = pd.read_pickle(input_file_path)
         df = util.onlyPackets(df)
 
+        d0 = 1
+
         df = df[df.distance > d0]
-        df['distance_log'] = 10*np.log10(df.distance/20)
-
-        #results = smf.ols('pl_db ~ distance_log', data=df[(df["distance"] < 105) & (df["distance"] > 100)]).fit()
-
-        #lower_bins = np.arange(20, 1000, 5)
-        #higher_bins = np.arange(20+10, 1000+10, 5)
-        #alpha = 0.05
-        #for lower_bin, higher_bin in zip(lower_bins,higher_bins):
-        #    data_to_check = df[(df["distance"] < higher_bin) & (df["distance"]> lower_bin)]
-        #    if(data_to_check.shape[0] > 20 ):
-        #        stat, p = shapiro(data_to_check.pl_db)
-        #        if p > alpha:
-        #            print('T1: Statistics=%.3f, p=%.3f' % (stat, p))
-        #            print("distance [{},{}]".format(lower_bin, higher_bin))
-        #        stat, p = normaltest(data_to_check.pl_db)
-        #        if p > alpha:
-        #            print('T2: Statistics=%.3f, p=%.3f' % (stat, p))
-        #            print("distance [{},{}]".format(lower_bin, higher_bin))
-
-        plot_normality(df)
+        df['distance_log'] = 10*np.log10(df.distance/d0)
+        
+        # df[(df["distance"] < 105) & (df["distance"] > 100)]
+        results = smf.ols('pl_db ~ distance_log', data=df).fit()
+        print(print(results.summary()))
 
         fig = plt.figure(figsize=(4, 3))
         ax = fig.add_subplot(1, 1, 1)
-
-        #prstd, iv_l, iv_u = wls_prediction_std(results)
-
-        
-        #ax.plot(df['distance'] , results.fittedvalues, 'r--.', label="OLS")
-        #ax.plot(df['distance'] , iv_u, 'r--')
-        #ax.plot(df['distance'] , iv_l, 'r--')
-        #ax.legend(loc='best');
-
-        # Inspect the results
-        #print(results.summary())
 
         slope, intercept, r_value, p_value, std_err = stats.linregress(
             df['distance_log'], df['pl_db'])
@@ -253,10 +228,15 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
 
         format_axes(ax)
 
+
         #plt.savefig(output_fig_pdf, format='pdf', bbox_inches='tight')
-        #plt.savefig(output_fig_pgf, format='pgf', bbox_inches='tight')
+        plt.savefig(output_fig_pgf, format='pgf', bbox_inches='tight')
 
         fig = plt.figure(figsize=(4, 3))
         ax = fig.add_subplot(1, 1, 1)
-        ax.scatter(df['distance'], df['snr'], color='0.50', marker='x')
+
+        df['sf'] = "SF" + df['sf'].astype(int).astype(str)
+        plt.gca().set_prop_cycle(None)
+        sns.scatterplot(x='distance', y='snr', hue='sf',
+                        data=df, color='0.50', marker='x')
         plt.show()

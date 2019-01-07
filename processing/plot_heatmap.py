@@ -50,7 +50,7 @@ with open(os.path.join(processing_path, "conf.json")) as config_file:
         measurements = config_measurement["measurements"]
         for measurement in measurements:
             print(
-                "--------------------- HEATMP {} ---------------------".format(measurement))
+                "--------------------- HEATMAP {} ---------------------".format(measurement))
             CENTER = config_measurement[measurement]["center"]
             input_file_path = os.path.join(
                 input_path, measurement, input_file_name)
