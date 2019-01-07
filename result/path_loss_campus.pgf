@@ -58,7 +58,7 @@
 \pgfusepath{fill}%
 \end{pgfscope}%
 \begin{pgfscope}%
-\pgfpathrectangle{\pgfqpoint{0.651134in}{0.520450in}}{\pgfqpoint{3.100000in}{2.310000in}}%
+\pgfpathrectangle{\pgfqpoint{0.651134in}{0.520450in}}{\pgfqpoint{3.100000in}{2.310000in}} %
 \pgfusepath{clip}%
 \pgfsetbuttcap%
 \pgfsetroundjoin%
@@ -28889,7 +28889,7 @@
 \end{pgfscope}%
 \end{pgfscope}%
 \begin{pgfscope}%
-\pgfpathrectangle{\pgfqpoint{0.651134in}{0.520450in}}{\pgfqpoint{3.100000in}{2.310000in}}%
+\pgfpathrectangle{\pgfqpoint{0.651134in}{0.520450in}}{\pgfqpoint{3.100000in}{2.310000in}} %
 \pgfusepath{clip}%
 \pgfsetbuttcap%
 \pgfsetroundjoin%
@@ -44528,7 +44528,7 @@
 \pgftext[x=0.233463in,y=1.675450in,,bottom,rotate=90.000000]{\sffamily\fontsize{10.000000}{12.000000}\selectfont Path Loss (dB)}%
 \end{pgfscope}%
 \begin{pgfscope}%
-\pgfpathrectangle{\pgfqpoint{0.651134in}{0.520450in}}{\pgfqpoint{3.100000in}{2.310000in}}%
+\pgfpathrectangle{\pgfqpoint{0.651134in}{0.520450in}}{\pgfqpoint{3.100000in}{2.310000in}} %
 \pgfusepath{clip}%
 \pgfsetrectcap%
 \pgfsetroundjoin%
@@ -44542,7 +44542,7 @@
 \pgfusepath{stroke}%
 \end{pgfscope}%
 \begin{pgfscope}%
-\pgfpathrectangle{\pgfqpoint{0.651134in}{0.520450in}}{\pgfqpoint{3.100000in}{2.310000in}}%
+\pgfpathrectangle{\pgfqpoint{0.651134in}{0.520450in}}{\pgfqpoint{3.100000in}{2.310000in}} %
 \pgfusepath{clip}%
 \pgfsetbuttcap%
 \pgfsetroundjoin%
@@ -44556,7 +44556,7 @@
 \pgfusepath{stroke}%
 \end{pgfscope}%
 \begin{pgfscope}%
-\pgfpathrectangle{\pgfqpoint{0.651134in}{0.520450in}}{\pgfqpoint{3.100000in}{2.310000in}}%
+\pgfpathrectangle{\pgfqpoint{0.651134in}{0.520450in}}{\pgfqpoint{3.100000in}{2.310000in}} %
 \pgfusepath{clip}%
 \pgfsetrectcap%
 \pgfsetroundjoin%
