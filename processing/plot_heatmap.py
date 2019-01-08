@@ -39,6 +39,72 @@ input_path = os.path.abspath(os.path.join(
 input_file_name = "preprocessed_data.pkl"
 
 
+def add_radius_circels(m):
+
+    circle = folium.Circle(
+        radius=1,
+        location=CENTER,
+        color='crimson',
+        fill=True,
+        fill_color='crimson'
+    ).add_to(hmap)
+
+    folium.Circle(
+        location=CENTER,
+        radius=100,
+        color='#9ec7e8',
+        fill=True,
+        fill_color='#eef5fb',
+        fill_opacity=0.1
+    ).add_to(hmap)
+
+    folium.Circle(
+        location=CENTER,
+        radius=250,
+        color='#9ec7e8',
+        fill=True,
+        fill_color='#eef5fb',
+        fill_opacity=0.1
+    ).add_to(hmap)
+
+    folium.Circle(
+        location=CENTER,
+        radius=500,
+        color='#9ec7e8',
+        fill=True,
+        fill_color='#eef5fb',
+        fill_opacity=0.1
+    ).add_to(hmap)
+
+    folium.Circle(
+        location=CENTER,
+        radius=1000,
+        color='#9ec7e8',
+        fill=True,
+        fill_color='#eef5fb',
+        fill_opacity=0.005
+    ).add_to(hmap)
+
+    folium.Circle(
+        location=CENTER,
+        radius=2000,
+        color='#9ec7e8',
+        fill=True,
+        fill_color='#eef5fb',
+        fill_opacity=0.005
+    ).add_to(hmap)
+
+    folium.Circle(
+        location=CENTER,
+        radius=4000,
+        color='#9ec7e8',
+        fill=True,
+        fill_color='#eef5fb',
+        fill_opacity=0.005
+    ).add_to(hmap)
+
+
+
 with open(os.path.join(processing_path, "conf.json")) as config_file:
     config_plot = json.load(config_file)["heatmap"]
     grid_size = config_plot["grid_size"]
@@ -62,13 +128,9 @@ with open(os.path.join(processing_path, "conf.json")) as config_file:
                 hmap = folium.Map(location=CENTER, zoom_start=18,
                                   tiles="cartodbpositron", control_scale=True)
 
-                circle = folium.Circle(
-                    radius=1,
-                    location=CENTER,
-                    color='crimson',
-                    fill=True,
-                    fill_color='crimson'
-                ).add_to(hmap)
+                
+                add_radius_circels(hmap)
+                
 
                 grid, colormap = util.get_geojson_grid(
                     for_map, grid_size, True)
@@ -97,14 +159,7 @@ with open(os.path.join(processing_path, "conf.json")) as config_file:
                 hmap = folium.Map(location=CENTER, zoom_start=18,
                                   tiles="cartodbpositron", control_scale=True)
 
-                circle = folium.Circle(
-                    radius=1,
-                    location=CENTER,
-                    color='crimson',
-                    fill=True,
-                    fill_color='crimson'
-                ).add_to(hmap)
-
+                add_radius_circels(hmap)
                 grid, colormap = util.get_geojson_grid(
                     for_map, grid_size, False)
 
