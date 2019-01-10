@@ -178,6 +178,7 @@ def addDistanceTo(df: pd.DataFrame, origin):
     origin : list of float
         [lat, long]
     df : pd.DataFrame
+    (excluding altitude)
     """
 
     radius = 6371*1000  # m
@@ -192,7 +193,6 @@ def addDistanceTo(df: pd.DataFrame, origin):
     d = (radius * c)
 
     df['distance'] = d
-    # TODO add altitude as well ?
 
 
 def filter(data):
