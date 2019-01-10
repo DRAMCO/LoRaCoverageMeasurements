@@ -22,7 +22,7 @@ import os
 from math import sqrt
 
 import matplotlib as mpl
-#mpl.use('pgf')
+mpl.use('pgf')
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -37,6 +37,9 @@ from scipy import stats
 import util as util
 
 SPINE_COLOR = 'gray'
+FORMAT = "pdf"
+MARKER = "+"
+spreading_factors = ["SF7", "SF9", "SF12"]
 
 
 
@@ -80,7 +83,7 @@ def latexify(fig_width=None, fig_height=None, columns=1):
         'ytick.labelsize': 8,
         'text.usetex': True,
         "pgf.rcfonts": False,
-        "pgf.texsystem": "pdflatex",
+        "pgf.texsystem": "lualatex",
         'figure.figsize': [fig_width, fig_height],
         'font.family': 'serif',
         "pgf.preamble": [
@@ -122,16 +125,17 @@ input_path = os.path.abspath(os.path.join(
     currentDir, '..', 'result'))
 input_file_name = "preprocessed_data.pkl"
 
-spreading_factors = ["SF7", "SF9", "SF12"]
+
 palette = dict(zip(spreading_factors, sns.color_palette()))
 
+first = True
+
 with open(os.path.join(path_to_measurements, "measurements.json")) as f:
-    
     config = json.load(f)
     measurements = config["measurements"]
     for measurement in measurements:
         print("--------------------- RSS MODEL {} ---------------------".format(measurement))
-        output_fig_pgf = os.path.join(input_path, 'rss_distance_{}.{}'.format(measurement, 'pdf'))
+        
         CENTER = config[measurement]["center"]
 
         input_file_path = os.path.join(
@@ -140,24 +144,103 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
         df = pd.read_pickle(input_file_path)
         df = util.onlyPackets(df)
 
+        latexify()
+        fig = plt.figure(figsize=(4, 3))
+        ax = fig.add_subplot(1, 1, 1)
+        format_axes(ax)
+
+        output_fig_pgf = os.path.join(
+            input_path, 'snr_distance_{}.{}'.format(measurement, FORMAT))
+
+        df['sf'] = "SF" + df['sf'].astype(int).astype(str)
+        sns.scatterplot(x='distance', y='snr', hue='sf',
+                        data=df, ci=None, palette=palette, color=".1", marker=MARKER, alpha=0.3)
+
+        max_distance = df.distance.max()
+
+        # RSS limit SF7
+        x_range = [0, max_distance]
+
+        # SNR limit SF7
+        plt.plot(x_range, [-7.5, -7.5], '-', lw=1, color="white")
+        plt.plot(x_range, [-7.5, -7.5], '--', lw=1)
+        
+
+        # SNR limit SF9
+        plt.plot(x_range, [-12.5, -12.5], '-', lw=1, color="white")
+        plt.plot(x_range, [-12.5, -12.5], '--', lw=1)
+        
+
+        # SNR limit SF12
+        plt.plot(x_range, [-20, -20], '-', lw=1, color="white")
+        plt.plot(x_range, [-20, -20], '--', lw=1)
+        
+        
+        
+        ax.set_xlabel(r'Distance (\si{\meter})')
+        ax.set_ylabel(r'Signal-to-noise ratio (\si{\deci\bel})')
+
+        if(first):
+            # PLOT legend
+            handles, labels = ax.get_legend_handles_labels()
+            order = []
+            for sf in spreading_factors:
+                order.append(labels.index(sf))
+
+            lgd = plt.legend([handles[idx] for idx in order],
+                       spreading_factors, frameon=False)
+            for l in lgd.get_lines():
+                l.set_alpha(1)
+                l.set_marker(MARKER)
+        else:
+            ax.get_legend().remove()
+
+        plt.savefig(output_fig_pgf, format=FORMAT, bbox_inches='tight')
+
+        print(
+            "--------------------- SNR MODEL {} ---------------------".format(measurement))
+
         #latexify()
         fig = plt.figure(figsize=(4, 3))
         ax = fig.add_subplot(1, 1, 1)
         format_axes(ax)
 
-        df['sf'] = "SF" + df['sf'].astype(int).astype(str)
+        output_fig_pgf = os.path.join(
+            input_path, 'rss_distance_{}.{}'.format(measurement, FORMAT))
+
         sns.scatterplot(x='distance', y='rss', hue='sf',
-                        data=df, ci=None, palette=palette, color=".2", marker="+")
-        
+                        data=df, ci=None, palette=palette, color=".1", marker=MARKER, alpha=0.3)
+
+        plt.plot(x_range, [-123, -123], '-', lw=1, color="white")
+        plt.plot(x_range, [-123, -123], '--', lw=1)
+
+        # RSS limit SF9
+        plt.plot(x_range, [-129, -129], '-', lw=1, color="white")
+        plt.plot(x_range, [-129, -129], '--', lw=1)
+
+        # RSS limit SF12
+        plt.plot(x_range, [-136, -136], '-', lw=1, color="white")
+        plt.plot(x_range, [-136, -136], '--', lw=1)
+
+
         ax.set_xlabel(r'Distance (\si{\meter})')
         ax.set_ylabel(r'Received Signal Strength (\si{\dBm})')
 
-        handles, labels = plt.gca().get_legend_handles_labels()
-        order = []
-        for sf in spreading_factors:
-            order.append(labels.index(sf))
+        if(first):
+            # PLOT legend
+            handles, labels = ax.get_legend_handles_labels()
+            order = []
+            for sf in spreading_factors:
+                order.append(labels.index(sf))
 
-        plt.legend([handles[idx] for idx in order], spreading_factors)
+            lgd = plt.legend([handles[idx] for idx in order],
+                       spreading_factors, frameon=False)
+            for l in lgd.get_lines():
+                l.set_alpha(1)
+                l.set_marker(MARKER)
+            first = False
+        else:
+            ax.get_legend().remove()
+        
 
-        plt.savefig(output_fig_pgf, format='pdf', bbox_inches='tight')
-        #plt.show()
+        plt.savefig(output_fig_pgf, format=FORMAT, bbox_inches='tight')
