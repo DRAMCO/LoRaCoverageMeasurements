@@ -37,6 +37,7 @@ import util as util
 import math
 
 BIN_SIZE_DISTANCE = 0.001 # in degrees
+OUTPUT_IMG_FORMAT = "png"
 
 
 currentDir = os.path.dirname(os.path.abspath(__file__))
@@ -55,6 +56,9 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
     for measurement in measurements:
         print("--------------------- PATH LOSS MODEL {} ---------------------".format(measurement))
         CENTER = config[measurement]["center"]
+        output_fig_pgf = os.path.join(
+            input_path, 'location_density_{}.{}'.format(measurement, OUTPUT_IMG_FORMAT))
+
 
         input_file_path = os.path.join(
             input_path, measurement, input_file_name)
@@ -64,8 +68,18 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
 
         print(df.columns)
         print(df.lat)
-        sns.jointplot(x=df['lat'], y=df['lon'], kind="kde", color="k") #, gridsize=num_bins)
-        plt.show()
+        #plt.scatter(CENTER[0], CENTER[1])
+        sns.jointplot(x=df['lat'], y=df['lon'], kind="kde",
+                      n_levels=25, joint_kws={'shade_lowest': False})  # , gridsize=num_bins)
+        
+        if OUTPUT_IMG_FORMAT == "png":
+            plt.savefig(output_fig_pgf, format=OUTPUT_IMG_FORMAT, dpi=1200,
+                        bbox_inches='tight')
+        else:
+            plt.savefig(output_fig_pgf, format=OUTPUT_IMG_FORMAT, bbox_inches='tight')
+
+
+        #plt.show()
 
 
         #input("Press Enter to continue...")
