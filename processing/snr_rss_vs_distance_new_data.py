@@ -1,3 +1,4 @@
+
 """
     ____  ____      _    __  __  ____ ___
    |  _ \|  _ \    / \  |  \/  |/ ___/ _ \
@@ -34,7 +35,12 @@ from scipy.stats import normaltest
 from scipy import stats
 
 import util as util
-import math
+
+SPINE_COLOR = 'gray'
+FORMAT = "pdf"
+MARKER = "+"
+
+
 
 
 currentDir = os.path.dirname(os.path.abspath(__file__))
@@ -45,33 +51,26 @@ input_path = os.path.abspath(os.path.join(
 input_file_name = "preprocessed_averaged_data.pkl"
 
 
-NUM_BINS = 20
-
 with open(os.path.join(path_to_measurements, "measurements.json")) as f:
-
     config = json.load(f)
     measurements = config["measurements"]
     for measurement in measurements:
-        print("--------------------- PATH LOSS MODEL {} ---------------------".format(measurement))
+        print("--------------------- RSS MODEL {} ---------------------".format(measurement))
+        
         CENTER = config[measurement]["center"]
 
         input_file_path = os.path.join(
             input_path, measurement, input_file_name)
-        print(input_file_path)
+
         df = pd.read_pickle(input_file_path)
         util.addDistanceTo(df, CENTER)
-        df.sort_values(by = ['distance'])
+        
+        fig = plt.figure(figsize=(4, 3))
+        ax = fig.add_subplot(1, 1, 1)
+        
+        sns.scatterplot(x='distance', y='rss_mean', 
+                        data=df, ci=None, color=".1", marker=MARKER, alpha=0.3)
+        
+        plt.show()
 
-        df['distance_bins'], bins = pd.cut(x=df.distance, bins=NUM_BINS, retbins=True)
-
-        print(df)
-
-        #ax = sns.lineplot(x="distance_bins", y="rss_median", data=df, label=measurement)
-        #std = df['rss_std']
-        #ax.fill_between(df['distance'], y1=df['rss_median'] - std, y2=df['rss_median']+std, alpha=0.2)
-
-        sns.catplot(x="distance_bins", y="rss", kind="box", data=df)
-
-plt.legend()
-plt.show()
-        #input("Press Enter to continue...")
+    
