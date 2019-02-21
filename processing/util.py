@@ -17,7 +17,6 @@
     Description:
 """
 
-
 import math
 from datetime import datetime
 
@@ -73,7 +72,7 @@ def get_geojson_grid(df, n, plot_snr):
 
     # values == 0 -> = 1 in order to not divide by
     num_values[num_values < 1] = 1
-    colors = colors/num_values
+    colors = colors / num_values
     colors = np.nan_to_num(colors)
 
     max_lat = df['lat'].max()
@@ -84,13 +83,13 @@ def get_geojson_grid(df, n, plot_snr):
 
     upper_right = [max_lat, max_lon]
     lower_left = [min_lat, min_lon]
-    center = [lower_left[0]+(upper_right[0]-lower_left[0]) /
-              2, lower_left[1]+(upper_right[1]-lower_left[1])/2]
+    center = [lower_left[0] + (upper_right[0] - lower_left[0]) /
+              2, lower_left[1] + (upper_right[1] - lower_left[1]) / 2]
 
     all_boxes = []
 
-    lat_steps = np.linspace(lower_left[0], upper_right[0], n+1)
-    lon_steps = np.linspace(lower_left[1], upper_right[1], n+1)
+    lat_steps = np.linspace(lower_left[0], upper_right[0], n + 1)
+    lon_steps = np.linspace(lower_left[1], upper_right[1], n + 1)
 
     cmap = plt.cm.magma
     norm = mpl.colors.Normalize(vmin=0, vmax=1)
@@ -181,7 +180,7 @@ def addDistanceTo(df: pd.DataFrame, origin):
     (excluding altitude)
     """
 
-    radius = 6371*1000  # m
+    radius = 6371 * 1000  # m
 
     dlat = np.radians(df.lat - lat)
     dlon = np.radians(df.lon - lon)
@@ -196,15 +195,13 @@ def addDistanceTo(df: pd.DataFrame, origin):
 
 
 def filter(data):
-    
     total_rows = data.shape[0]
     current_rows_data = data[data.isPacket > 0].shape[0]
-    print(" Packet points {0}/{1} {2:.1f}% rows".format(current_rows_data,
-                                                        total_rows, (current_rows_data/total_rows)*100))
+    print(F" Packet points {current_rows_data}/{total_rows} {(current_rows_data/total_rows)*100:.1f}% rows")
 
     with_gps_data = data[(data.sat > 0) & data.isPacket > 0].shape[0]
     print(" Packet points with GPS {0}/{1} {2:.1f}% rows".format(
-        with_gps_data, current_rows_data, (with_gps_data/current_rows_data)*100))
+        with_gps_data, current_rows_data, (with_gps_data / current_rows_data) * 100))
 
     data = data[data.sat > 0]
     data = data[data.ageValid > 0]
@@ -214,21 +211,18 @@ def filter(data):
     data = data[data.locValid > 0]
     data = data[data.ageValid > 0]
 
-    print(" Packet points with GPS without RSS filtering {0}/{1} {2:.1f}% rows".format(
-        data[data.isPacket > 0].shape[0], current_rows_data, (data[data.isPacket > 0].shape[0]/current_rows_data)*100))
+    print(
+        F" Packet points with GPS without RSS filtering "
+        F"{data[data.isPacket > 0].shape[0]}/{current_rows_data} {(data[data.isPacket > 0].shape[0]/current_rows_data)*100:.1f}% rows")
 
     data.loc[:, 'time'] = pd.to_datetime(
         data['time'], format='%m/%d/%Y %H:%M:%S ', utc=True, errors='coerce')
     data = data.set_index(['time'])
-#
-    #start_date = '20181029'
-    ##end_date = datetime.strptime('10/29/2019', '%m/%d/%Y')
-    ##data = data.between_time(start_date, end_date, include_start=True)
-    #data = data.loc[start_date:, :]
-#
+
     data = data[(data.sf == 12) | (data.sf == 9) | (data.sf == 7)]
     print(" Packet points with GPS with SF filtering {0}/{1} {2:.1f}% rows".format(
-        data[data.isPacket > 0].shape[0], current_rows_data, (data[data.isPacket > 0].shape[0]/current_rows_data)*100))
+        data[data.isPacket > 0].shape[0], current_rows_data,
+        (data[data.isPacket > 0].shape[0] / current_rows_data) * 100))
 
     # Correction factor as described in https://cdn-shop.adafruit.com/product-files/3179/sx1276_77_78_79.pdf
 
@@ -244,11 +238,12 @@ def filter(data):
 
     snr_correction = data.snr.copy()
     snr_correction[snr_correction > 0] = 0
-    rssi_correction = packet_rssi + snr_correction*0.25
+    rssi_correction = packet_rssi + snr_correction * 0.25
 
-    data.loc[:, 'correction_factor'] = 1 #data.add(pd.DataFrame(np.ones(data.shape[0]), index=data.index, columns=['correction_factor']), fill_value=0)
-    data.loc[data["rssi"] > -100, 'correction_factor'] = 16/15
-    rssi_correction = packet_rssi*data['correction_factor']
+    data.loc[:,
+    'correction_factor'] = 1  # data.add(pd.DataFrame(np.ones(data.shape[0]), index=data.index, columns=['correction_factor']), fill_value=0)
+    data.loc[data["rssi"] > -100, 'correction_factor'] = 16 / 15
+    rssi_correction = packet_rssi * data['correction_factor']
 
     data.loc[:, "rss"] = - 157 + rssi_correction
 
@@ -261,7 +256,8 @@ def filter(data):
 
     current_rows_data_after_filtering = data[data.isPacket > 0].shape[0]
     print(" Packet points after filtering {0}/{1} {2:.1f}% rows".format(
-        current_rows_data_after_filtering, current_rows_data, (current_rows_data_after_filtering/current_rows_data)*100))
+        current_rows_data_after_filtering, current_rows_data,
+        (current_rows_data_after_filtering / current_rows_data) * 100))
 
     return data
 
@@ -285,11 +281,11 @@ def normalize(data, min_val=None, max_val=None, num_bins=None):
     if num_bins:
 
         if isinstance(data, pd.DataFrame) or isinstance(data, pd.Series):
-            return (((data-min_val)/abs(max_val-min_val))*(num_bins-1)).astype(int)
+            return (((data - min_val) / abs(max_val - min_val)) * (num_bins - 1)).astype(int)
         else:
             return ValueError("data needs to be a panda dataframe or series")
     else:
         if isinstance(data, pd.DataFrame) or isinstance(data, pd.Series):
-            return (data-min_val)/abs(max_val-min_val)
+            return (data - min_val) / abs(max_val - min_val)
         else:
             return ValueError("data needs to be a panda dataframe or series")
