@@ -37,7 +37,7 @@ from scipy import stats
 import util as util
 
 SPINE_COLOR = 'gray'
-FORMAT = "pdf"
+FORMAT = "png"
 MARKER = "+"
 spreading_factors = ["SF7", "SF9", "SF12"]
 
@@ -157,6 +157,9 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
                         data=df, ci=None, palette=palette, color=".1", marker=MARKER, alpha=0.3)
 
         max_distance = df.distance.max()
+        print("Max distance: {}".format(max_distance))
+        print("Lowest SNR: {}".format(df.snr.min()))
+        print("Lowest RSS: {}".format(df.rss.min()))
 
         # RSS limit SF7
         x_range = [0, max_distance]
@@ -208,7 +211,7 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
         output_fig_pgf = os.path.join(
             input_path, 'rss_distance_{}.{}'.format(measurement, FORMAT))
 
-        sns.scatterplot(x='distance', y='rss', hue='sf',
+        sns.scatterplot(x='distance', y='esp', hue='sf',
                         data=df, ci=None, palette=palette, color=".1", marker=MARKER, alpha=0.3)
 
         plt.plot(x_range, [-123, -123], '-', lw=1, color="white")
@@ -243,4 +246,4 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
             ax.get_legend().remove()
         
 
-        plt.savefig(output_fig_pgf, format=FORMAT, bbox_inches='tight')
+        plt.savefig(output_fig_pgf, format=FORMAT, dpi=1200, bbox_inches='tight')

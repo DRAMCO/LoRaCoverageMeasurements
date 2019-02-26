@@ -37,6 +37,8 @@ import util as util
 
 SPINE_COLOR = 'gray'
 
+PLOT_PATH_LOSS = False
+OUTPUT_IMG_FORMAT = "png"
 
 
 def latexify(fig_width=None, fig_height=None, columns=1):
@@ -149,7 +151,8 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
     measurements = config["measurements"]
     for measurement in measurements:
         print("--------------------- PATH LOSS MODEL {} ---------------------".format(measurement))
-        output_fig_pgf = os.path.join(input_path, 'path_loss_{}.{}'.format(measurement, 'pgf'))
+        output_fig_pgf = os.path.join(
+            input_path, 'path_loss_{}.{}'.format(measurement, OUTPUT_IMG_FORMAT))
         CENTER = config[measurement]["center"]
         #d0 = config[measurement]["d0"]
         #pl0 = config[measurement]["pl0"]
@@ -195,42 +198,50 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
 
-        idx = df['distance'] < 300
-        ax.scatter(df['distance'][idx], df['pl_db'][idx],
+        #idx = df['distance'] < 300
+        ax.scatter(df['distance'], df['pl_db'],
                    marker='x', label="Measured Path Loss", s=1, c='darkorange')
-        idx = (df['distance'] > 300) | (df['distance'] == 300)
-        ax.scatter(df['distance'][idx], df['pl_db'][idx],
-                   marker='x', label="Measured Path Loss", s=1, c='0.50')
+        
+        #idx = (df['distance'] > 300) | (df['distance'] == 300)
+        #ax.scatter(df['distance'][idx], df['pl_db'][idx],
+                   #marker='x', label="Measured Path Loss", s=1, c='0.50')
         ax.set_xlabel('Log distance (m)')
         ax.set_ylabel('Path Loss (dB)')
 
-        x, y = zip(*sorted(zip(df['distance'], df['epl_log'])))
-        ax.plot(x, y, ls='-', label="Expected Path Loss",
-                linewidth=1.5, color='gray')
-        x, y = zip(*sorted(zip(df['distance'], df['epl_free_log'])))
-        ax.plot(x, y, ls='dashed', label="Free Space Path Loss",
-                linewidth=1.5, color='dimgray')
+        if PLOT_PATH_LOSS:
 
-        idx = df['distance'] < 300
-        slope, intercept, r_value, p_value, std_err = stats.linregress(
-            df['distance_log'][idx], df['pl_db'][idx])
-        pl0 = intercept
-        n = slope
-        print(slope, intercept, r_value, p_value, std_err)
-        df['epl_log'] = 10*n * \
-            np.log10(df['distance'])+(-10*n*np.log10(d0) + pl0)
-
-        x, y = zip(*sorted(zip(df['distance'], df['epl_log'])))
-        ax.plot(x, y, ls='-', label="Expected Path Loss (without gray measurements)",
-                linewidth=1.5, color='k')
-
-        plt.legend(framealpha=0.0)
+            x, y = zip(*sorted(zip(df['distance'], df['epl_log'])))
+            ax.plot(x, y, ls='-', label="Expected Path Loss",
+                    linewidth=1.5, color='gray')
+            x, y = zip(*sorted(zip(df['distance'], df['epl_free_log'])))
+            ax.plot(x, y, ls='dashed', label="Free Space Path Loss",
+                    linewidth=1.5, color='dimgray')
+    
+            idx = df['distance'] < 300
+            slope, intercept, r_value, p_value, std_err = stats.linregress(
+                df['distance_log'][idx], df['pl_db'][idx])
+            pl0 = intercept
+            n = slope
+            print(slope, intercept, r_value, p_value, std_err)
+            df['epl_log'] = 10*n * \
+                np.log10(df['distance'])+(-10*n*np.log10(d0) + pl0)
+    
+            x, y = zip(*sorted(zip(df['distance'], df['epl_log'])))
+            ax.plot(x, y, ls='-', label="Expected Path Loss (without gray measurements)",
+                    linewidth=1.5, color='k')
+    
+            plt.legend(framealpha=0.0)
 
         format_axes(ax)
 
 
-        #plt.savefig(output_fig_pdf, format='pdf', bbox_inches='tight')
-        plt.savefig(output_fig_pgf, format='pgf', bbox_inches='tight')
+        #plt.savefig(output_fig_pdf, format='pdf', bbox_inches='tight'
+        if OUTPUT_IMG_FORMAT=="png":
+            plt.savefig(output_fig_pgf, format=OUTPUT_IMG_FORMAT, dpi=1200,
+                        bbox_inches='tight')
+        else:
+            plt.savefig(output_fig_pgf, format=OUTPUT_IMG_FORMAT, bbox_inches='tight')
+
 
         fig = plt.figure(figsize=(4, 3))
         ax = fig.add_subplot(1, 1, 1)

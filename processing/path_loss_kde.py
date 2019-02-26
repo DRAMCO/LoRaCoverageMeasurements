@@ -62,5 +62,5 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
 
         ax = sns.kdeplot(df.distance, df.rss, shade=True,  shade_lowest=False)
 
-    plt.show()
+        plt.show()
         

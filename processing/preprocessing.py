@@ -82,6 +82,10 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
         print(" Processed {0}/{1} {2:.1f}% and {3:.1f}% of total".format(current_rows_data,
               current_rows, (current_rows_data/current_rows)*100, (current_rows_data/total_rows)*100))
         
+        df['noise'] = df['rss'] - df['snr']
+        # efective signal power according to Understanding collisions in a LoRaWAN
+        df['esp'] = df['rss'] + df['snr'] - 10*np.log10(1+10**(0.1*df['snr']))
+
         output_file="preprocessed_data.pkl"
         output_file_path=os.path.join(output_path, measurement, output_file)
         df.to_pickle(output_file_path)

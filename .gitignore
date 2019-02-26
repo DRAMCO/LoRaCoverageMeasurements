@@ -1,8 +1,11 @@
-
 *.pyc
-result/seaside/heatmap_SNR.html
-result/seaside/heatmap_SNR.html
-result/campus/heatmap_RSS.html
-result/campus/heatmap_SNR.html
+.vscode/
 *.html
 *.pkl
+.idea/encodings.xml
+.idea/modules.xml
+.idea/vcs.xml
+.idea/other.xml
+.idea/misc.xml
+.idea/workspace.xml
+.idea/LoRaCoverageMeasurements.iml

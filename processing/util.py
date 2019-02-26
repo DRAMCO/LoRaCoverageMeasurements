@@ -17,9 +17,6 @@
     Description:
 """
 
-import math
-from datetime import datetime
-
 import branca.colormap as cm
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -28,24 +25,12 @@ import pandas as pd
 
 
 def get_geojson_grid(df, n, plot_snr):
-    """Returns a grid of geojson rectangles, and computes the exposure in each section of the grid based on the vessel data.
+    """
 
-    Parameters
-    ----------
-    upper_right: array_like
-        The upper right hand corner of "grid of grids".
-
-    lower_left: array_like
-        The lower left hand corner of "grid of grids".
-
-    n: integer
-        The number of rows/columns in the (n,n) grid.
-
-    Returns
-    -------
-
-    list
-        List of "geojson style" dictionary objects
+    :param df:
+    :param n:
+    :param plot_snr:
+    :return:
     """
     if plot_snr:
         values_to_plot_id = 'snr'
@@ -197,7 +182,7 @@ def addDistanceTo(df: pd.DataFrame, origin):
 def filter(data):
     total_rows = data.shape[0]
     current_rows_data = data[data.isPacket > 0].shape[0]
-    print(F" Packet points {current_rows_data}/{total_rows} {(current_rows_data/total_rows)*100:.1f}% rows")
+    print(F" Packet points {current_rows_data}/{total_rows} {(current_rows_data / total_rows) * 100:.1f}% rows")
 
     with_gps_data = data[(data.sat > 0) & data.isPacket > 0].shape[0]
     print(" Packet points with GPS {0}/{1} {2:.1f}% rows".format(
@@ -211,18 +196,18 @@ def filter(data):
     data = data[data.locValid > 0]
     data = data[data.ageValid > 0]
 
-    print(
-        F" Packet points with GPS without RSS filtering "
-        F"{data[data.isPacket > 0].shape[0]}/{current_rows_data} {(data[data.isPacket > 0].shape[0]/current_rows_data)*100:.1f}% rows")
+    #print(
+    #    F" Packet points with GPS without RSS filtering "
+    #    F"{data[data.isPacket > 0].shape[0]}/{current_rows_data} {(data[data.isPacket > 0].shape[0] / current_rows_data) * 100:.1f}% rows")
 
-    data.loc[:, 'time'] = pd.to_datetime(
-        data['time'], format='%m/%d/%Y %H:%M:%S ', utc=True, errors='coerce')
-    data = data.set_index(['time'])
+    data.loc[:, 'time'] = pd.to_datetime(data['time'], format='%m/%d/%Y %H:%M:%S ', utc=True, errors='coerce')
+
+    data.reset_index()
 
     data = data[(data.sf == 12) | (data.sf == 9) | (data.sf == 7)]
-    print(" Packet points with GPS with SF filtering {0}/{1} {2:.1f}% rows".format(
-        data[data.isPacket > 0].shape[0], current_rows_data,
-        (data[data.isPacket > 0].shape[0] / current_rows_data) * 100))
+    #print(" Packet points with GPS with SF filtering {0}/{1} {2:.1f}% rows".format(
+    #    data[data.isPacket > 0].shape[0], current_rows_data,
+    #    (data[data.isPacket > 0].shape[0] / current_rows_data) * 100))
 
     # Correction factor as described in https://cdn-shop.adafruit.com/product-files/3179/sx1276_77_78_79.pdf
 
@@ -231,7 +216,7 @@ def filter(data):
     # if RSSI > -100dBm: RSSI = -157 + 16/15 * PacketRssi
 
     data.loc[:, "rssi"] = data.rssi.astype(float)
-    data.loc[data["rssi"] > 20, "rssi"] = -1 * data[data["rssi"] > 20]
+    data.loc[data["rssi"] > 20, "rssi"] = -1 * data[data["rssi"] > 20]["rssi"]
 
     packet_rssi = data["rssi"] + 157
     rssi_correction = packet_rssi
@@ -240,8 +225,7 @@ def filter(data):
     snr_correction[snr_correction > 0] = 0
     rssi_correction = packet_rssi + snr_correction * 0.25
 
-    data.loc[:,
-    'correction_factor'] = 1  # data.add(pd.DataFrame(np.ones(data.shape[0]), index=data.index, columns=['correction_factor']), fill_value=0)
+    data.loc[:,'correction_factor'] = 1  # data.add(pd.DataFrame(np.ones(data.shape[0]), index=data.index, columns=['correction_factor']), fill_value=0)
     data.loc[data["rssi"] > -100, 'correction_factor'] = 16 / 15
     rssi_correction = packet_rssi * data['correction_factor']
 
@@ -249,10 +233,10 @@ def filter(data):
 
     data = data[data["rss"] < 20]
     # remove unneeded columns
-    cols = ["sat", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal", "locValid", "age",
+    cols = ["sat", "freqError", "alt", "satValid", "hdopVal", "hdopValid", "vdopVal", "pdopVal", "locValid", "age",
             "ageValid", "altValid", "course", "courseValid", "speed", "speedValid", "rssi", "correction_factor"]
     cols = [c for c in cols if c in data.columns]
-    data.drop(columns=cols)
+    data.drop(columns=cols, axis=1, inplace=True)
 
     current_rows_data_after_filtering = data[data.isPacket > 0].shape[0]
     print(" Packet points after filtering {0}/{1} {2:.1f}% rows".format(

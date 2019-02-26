@@ -101,23 +101,15 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
         df = pd.read_pickle(input_file_path)
         df = util.onlyPackets(df)
 
-
-
-        #plt.scatter(CENTER[0], CENTER[1])
-        sns.jointplot(x=df['lat'], y=df['lon'], kind="kde",
-                      n_levels=25, joint_kws={'shade_lowest': False})  # , gridsize=num_bins)
-        
-        #if OUTPUT_IMG_FORMAT == "png":
-        #    plt.savefig(output_fig_pgf, format=OUTPUT_IMG_FORMAT, dpi=1200,
-        #                bbox_inches='tight')
-        #else:
-        #    plt.savefig(output_fig_pgf, format=OUTPUT_IMG_FORMAT, bbox_inches='tight')
-
-
-        #plt.show()
-
-        cmap = sns.cubehelix_palette(dark=1, light=0, as_cmap=True)
-        g = sns.jointplot(x=df['lon'], y=df['lat'], kind="hex", gridsize=25, cmap="viridis")  # , color="k") #, gridsize=num_bins) C=df['snr'],
+        cmap = sns.cubehelix_palette(n_colors=20, as_cmap=True)
+        g = sns.jointplot(x=df['lon'], y=df['lat'], C=df['snr'], reduce_C_function=np.median, kind="hex",
+                          gridsize=25, cmap="viridis")  # , color="k") #, gridsize=num_bins) C=df['snr'],
+        g.ax_marg_x.set_axis_off()
+        g.ax_marg_y.set_axis_off()
+       
+        plt.colorbar()
+        plt.savefig(output_fig_pgf, format=OUTPUT_IMG_FORMAT, dpi=1200,
+                                   bbox_inches='tight')
         plt.show()
 
         function = [np.mean, np.std, np.median, np.amin, np.amax, partial(np.percentile, q=25), partial(np.percentile, q=75)]
