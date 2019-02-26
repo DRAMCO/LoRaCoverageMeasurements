@@ -87,13 +87,13 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
         df.set_index('time', inplace=True)
         df.sort_values('time')
 
-        df_copy  = df.copy()
+        df_copy = df.copy()
 
         df_files = df_copy.groupby(['file'])
         for name, df_file in df_files:
 
             interval_list = []
-            # create empty dataframe to contain all values for one interval
+            # create empty data frame to contain all values for one interval
             interval_df = pd.DataFrame(columns=df.columns)
 
             tmp_sf = df_file.iloc[0].sf

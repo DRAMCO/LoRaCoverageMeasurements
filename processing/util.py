@@ -46,14 +46,14 @@ def get_geojson_grid(df, n, plot_snr):
 
     colors = np.zeros((n, n))
     num_values = np.zeros((n, n))
-    transparant_matrix = np.zeros((n, n))
+    transparent_matrix = np.zeros((n, n))
 
     for idx, row in df.iterrows():
         row_idx = int(row['lat_discreteat'])
         col_idx = int(row['lon_discrete'])
         colors[row_idx][col_idx] += row[values_to_plot_id]
         num_values[row_idx][col_idx] += 1
-        transparant_matrix[row_idx][col_idx] = 1
+        transparent_matrix[row_idx][col_idx] = 1
 
     # values == 0 -> = 1 in order to not divide by
     num_values[num_values < 1] = 1
@@ -112,7 +112,7 @@ def get_geojson_grid(df, n, plot_snr):
                     "coordinates": [coordinates],
                 },
                 "properties": {
-                    "show": transparant_matrix[row_idx][col_idx],
+                    "show": transparent_matrix[row_idx][col_idx],
                     "color": color,
                     "val": norm(colors[row_idx][col_idx])
                 }
@@ -131,9 +131,11 @@ def get_geojson_grid(df, n, plot_snr):
     colormap.caption = caption.upper()
     return all_boxes, colormap
 
+def numberOfRows(df):
+    return len(df.index)
 
 def onlyPackets(df):
-    return df[df.isPacket > 0]
+    return df[df.isPacket == 1]
 
 
 def addPathLossTo(df: pd.DataFrame, tp=20, gain=0):
@@ -196,16 +198,16 @@ def filter(data):
     data = data[data.locValid > 0]
     data = data[data.ageValid > 0]
 
-    #print(
+    # print(
     #    F" Packet points with GPS without RSS filtering "
     #    F"{data[data.isPacket > 0].shape[0]}/{current_rows_data} {(data[data.isPacket > 0].shape[0] / current_rows_data) * 100:.1f}% rows")
 
     data.loc[:, 'time'] = pd.to_datetime(data['time'], format='%m/%d/%Y %H:%M:%S ', utc=True, errors='coerce')
-
-    data.reset_index()
+    # removes NaT if datatime conversion was unsuccessful
+    data.dropna(subset=['time'], inplace=True)
 
     data = data[(data.sf == 12) | (data.sf == 9) | (data.sf == 7)]
-    #print(" Packet points with GPS with SF filtering {0}/{1} {2:.1f}% rows".format(
+    # print(" Packet points with GPS with SF filtering {0}/{1} {2:.1f}% rows".format(
     #    data[data.isPacket > 0].shape[0], current_rows_data,
     #    (data[data.isPacket > 0].shape[0] / current_rows_data) * 100))
 
@@ -225,7 +227,8 @@ def filter(data):
     snr_correction[snr_correction > 0] = 0
     rssi_correction = packet_rssi + snr_correction * 0.25
 
-    data.loc[:,'correction_factor'] = 1  # data.add(pd.DataFrame(np.ones(data.shape[0]), index=data.index, columns=['correction_factor']), fill_value=0)
+    data.loc[:,
+    'correction_factor'] = 1  # data.add(pd.DataFrame(np.ones(data.shape[0]), index=data.index, columns=['correction_factor']), fill_value=0)
     data.loc[data["rssi"] > -100, 'correction_factor'] = 16 / 15
     rssi_correction = packet_rssi * data['correction_factor']
 
