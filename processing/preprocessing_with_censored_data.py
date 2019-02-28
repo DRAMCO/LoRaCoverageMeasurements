@@ -108,7 +108,7 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
             interval_list.append(interval_df)
 
             censored_packets = []
-            print(F"Checking {len(interval_list)} intervals")
+            #print(F"Checking {len(interval_list)} intervals")
             for interval in interval_list:
 
                 interval.index = pd.to_datetime(interval.index)
@@ -116,7 +116,7 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
                 unique_interval = interval[~interval.index.duplicated(keep='first')]
                 # for each interval see if we find censored data
                 packets = interval.query('isPacket == 1')
-                print(F"\t checking {len(packets)} in interval")
+                #print(F"\t checking {len(packets)} in interval")
                 if len(packets.index) < 2:
                     continue
 
