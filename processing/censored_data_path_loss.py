@@ -1,4 +1,4 @@
-"""
+r"""
     ____  ____      _    __  __  ____ ___
    |  _ \|  _ \    / \  |  \/  |/ ___/ _ \
    | | | | |_) |  / _ \ | |\/| | |  | | | |
@@ -20,15 +20,14 @@
 import json
 import os
 
+import matlab.engine
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.io as sio
 import util as util
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import seaborn as sns
-import matlab.engine
 from matplotlib.ticker import ScalarFormatter
+from LatexifyMatplotlib import LatexifyMatplotlib as lm
 
 eng = matlab.engine.start_matlab()
 
@@ -40,7 +39,6 @@ input_path = os.path.abspath(os.path.join(
 input_file_name = "preprocessed_data_with_censored_data.pkl"
 
 PL_THRESHOLD = 145
-
 
 # def censorced_ml(x, y, c, t, a_est, s2e):
 #
@@ -70,6 +68,8 @@ PL_THRESHOLD = 145
 #
 # def censoredvar(x, c, param, param1, param2):
 #     pass
+
+lm.latexify()
 
 with open(os.path.join(path_to_measurements, "measurements.json")) as f:
     config = json.load(f)
@@ -125,15 +125,15 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
         t_matlab = uncensored_packets_mask * 1
 
         sio.savemat(F'censored_data_{measurement}.mat', {'y': y, 't': t_matlab, 'c': c, 'x': x})
-        (a_est, sigma_est, thetahat, sqrt_Avarhat) = eng.compute_path_loss(F'censored_data_{measurement}.mat', nargout=4)
+        (a_est, sigma_ols, thetahat, sqrt_Avarhat) = eng.compute_path_loss(F'censored_data_{measurement}.mat',
+                                                                           nargout=4)
 
         PLd0_ols = np.float32(a_est[0])
         n_ols = np.float32(a_est[1])
 
         PLd0_ml = np.float32(thetahat[0])
         n_ml = np.float32(thetahat[1])
-        sigma_ml= np.float32(thetahat[2])
-
+        sigma_ml = np.float32(thetahat[2])
 
         df_uncensored = df.loc[uncensored_packets_mask]
 
@@ -146,25 +146,40 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
 
-        ax.scatter(df_uncensored['distance'], df_uncensored['pl_db'],
-                   marker='x', label="Measured Path Loss", s=1, c='darkorange')
+        d_mask = df_uncensored['distance']>=10
+        ax.scatter(df_uncensored.loc[d_mask,["distance"]], df_uncensored.loc[d_mask,['pl_db']],
+                   marker='x', label="Measured Path Loss", s=1, c='0.75')
 
         d_max = df['distance'].max()
-        d = np.arange(2,d_max, dtype=np.float)
-        pl_ols = PLd0_ols + 10.0*n_ols*np.log10(d)
+        d = np.arange(10, d_max, dtype=np.float)
+        pl_ols = PLd0_ols + 10.0 * n_ols * np.log10(d)
 
-        ax.plot(d, pl_ols, ls='-', label="OLS: \mu(d)",
-                linewidth=.5, color='k')
-        ax.fill_between(d, pl_ols+sigma_est, pl_ols-sigma_est, color='k', alpha=0.2)
+        ax.plot(d, pl_ols, ls='-', label=r"OLS: \^\mu(d)",
+                linewidth=1, color='0.25')
+        ax.plot(d, pl_ols+2*sigma_ols, ls=(0, (5, 10)), linewidth=1, color='0.25')
+        ax.plot(d, pl_ols-2*sigma_ols, ls=(0, (5, 10)), linewidth=1, color='0.25')
+        #ax.fill_between(d, pl_ols + sigma_est, pl_ols - sigma_est, color='k', alpha=0.2)
 
-        pl_ml = PLd0_ml + 10.0*n_ml*np.log10(d)
-        ax.plot(d, pl_ml, ls='-', label="MLS: \mu(d)",
+        pl_ml = PLd0_ml + 10.0 * n_ml * np.log10(d)
+        ax.plot(d, pl_ml, ls='-', label=r"MLS: \^\mu(d)",
                 linewidth=1.5, color='k')
-        ax.fill_between(d, pl_ml + sigma_ml, pl_ml - sigma_ml, color='k', alpha=0.2)
+        
+        ax.plot(d, pl_ml+2*sigma_ml, ls='--', linewidth=1, color='k')
+        ax.plot(d, pl_ml-2*sigma_ml, ls='--', linewidth=1, color='k')
 
-        ax.set_xlabel('Log distance (m)')
-        ax.set_ylabel('Path Loss (dB)')
-        plt.show()
+        #ax.fill_between(d, pl_ml + sigma_ml, pl_ml - sigma_ml, color='k', alpha=0.2)
+
+        ax.set_xlabel(r'Log distance (m)')
+        ax.set_ylabel(r'Path Loss (dB)')
+
+        #table = r'''\begin{table} \footnotesize \begin{tabular}{@{}lll@{}}\toprule & \^n & \^\sigma \\ \midrule   ML & 3.329 & 16.625 \\ OLS & 3.263 & 11.005\\ \bottomrule \end{tabular} \end{table}'''
+
+        #plt.text(9, 3.4, table, size=12)
+
+        lm.format_axes(ax)
+        lm.legend(plt)
+        lm.save(plt, F'censored_data_{measurement}_path_loss.pdf')
+
 
         # OLS with data < threshold
 
@@ -181,7 +196,6 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
         # print(F" PL(d0)     {pl:^10.2f}{pl_ml:^10.2f}")
         # print(F" n          {n:^10.3f}{n_ml:^10.3f}")
         # print(F" sigma      {np.sqrt(sigma2_est):^10.3f}{sigma_ml:^10.3f}")
-
 
 # def plot_path_loss():
 #     x, y = zip(*sorted(zip(df['distance'], df['epl_log'])))
@@ -205,5 +219,3 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
 #             linewidth=1.5, color='k')
 #
 #     plt.legend(framealpha=0.0)
-
-

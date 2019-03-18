@@ -34,7 +34,7 @@
 
 function est=censoredml(x,y,c,t,a_est,s2e)
 
-  opts = optimset('GradObj','off', 'Largescale','off','MaxFunEvals',20000);
+  opts = optimset('GradObj','off', 'Largescale','off','MaxFunEvals',2000000);
   pars = fminsearch(@(pars) censoredllh(pars),[a_est;log(s2e)],opts);
   est=[pars(1:2); sqrt(exp(pars(3)))];
 
