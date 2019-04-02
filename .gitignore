@@ -12,3 +12,5 @@
 .idea/deployment.xml
 .idea/codeStyles/codeStyleConfig.xml
 processing/python.log
+*.pdf
+*.mat

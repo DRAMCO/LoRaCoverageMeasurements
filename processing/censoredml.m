@@ -32,16 +32,26 @@
 %   You should have received a copy of the GNU General Public License
 %   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-function est=censoredml(x,y,c,t,a_est,s2e)
+function est=censoredml(d,y,c,t,a_est,s2e)
 
-  opts = optimset('GradObj','off', 'Largescale','off','MaxFunEvals',2000000);
-  pars = fminsearch(@(pars) censoredllh(pars),[a_est;log(s2e)],opts);
-  est=[pars(1:2); sqrt(exp(pars(3)))];
+  opts = optimset('GradObj','off', 'Largescale','off','MaxFunEvals',20000,'MaxIter',20000);
+  PL0 = a_est(1)
+  n = a_est(2)
+  pars = fminsearch(@(pars) censoredllh(pars),[PL0;n;sqrt(s2e)],opts);
+  est = pars;
 
   function l = censoredllh(p)
     L = zeros(size(y));
-    L(t==1)=-0.5*(y(t==1)-x(t==1,:)*p(1:2)).^2/exp(p(3))-log(sqrt(2*pi))-p(3)/2;
-    L(t==0)=log(1-normcdf((c-x(t==0,:)*p(1:2))/exp(p(3)/2)));
+    PL0 = p(1);
+    n = p(2);
+    sigma = p(3);
+
+    PLm = 10*n*log10(d(t==1)') + PL0;
+    PLm_star = 10*n*log10(d(t==0)') + PL0;
+
+    L(t==1) = -log(sigma) + log(normpdf((y(t==1)-PLm)./sigma));
+
+    L(t==0)= log(1-normcdf((c-PLm_star)./sigma));
     l = -sum(L);
   end
 end
