@@ -34,70 +34,34 @@ eng = matlab.engine.start_matlab()
 currentDir = os.path.dirname(os.path.abspath(__file__))
 path_to_measurements = os.path.abspath(os.path.join(
     currentDir, '..', 'data'))
+
+
 input_path = os.path.abspath(os.path.join(
     currentDir, '..', 'result'))
-input_file_name = "preprocessed_data_with_censored_data.pkl"
+input_file_name = "processed_data_with_censored_data.pkl"
+input_file_path = os.path.join(input_path, input_file_name)
 
-PL_THRESHOLD = 148
 
 lm.latexify()
 
 with open(os.path.join(path_to_measurements, "measurements.json")) as f:
     config = json.load(f)
     measurements = config["measurements"]
+    data = pd.read_pickle(input_file_path)
+
     for measurement in measurements:
         print(F"--------------------- PATH LOSS MODEL {measurement} ---------------------")
 
-        LOAD_TEST_DATA = False
-
-        if LOAD_TEST_DATA:
-            d = np.linspace(10, 200, num=200)
-            d0 = 1
-            PLd0 = 20 * np.log10(4 * np.pi * d0 / (3e8 / 5.9e9))  # 47.85881241889156
-            n = 2
-            sigma = 4
-            c = 90
-            y = PLd0 + 10 * n * np.log10(d / d0) + sigma * np.random.randn(len(d))
-            x = np.column_stack((np.ones((len(y), 1)), 10 * np.log10(d / d0)))
-
-            uncensored_packets_mask = y < c
-            censored_packets_mask = np.invert(uncensored_packets_mask)
-
-            yt = y
-            yt[censored_packets_mask] = c
-            x = np.asmatrix(x)
-
-        else:
-            input_file_path = os.path.join(
-                input_path, measurement, input_file_name)
-
-            df = pd.read_pickle(input_file_path)
-            df = df[df.isPacket > 0]  # censored and uncensored packets
-            print(F"Max. Path Loss = {df['pl_db'].max()}")
-
-            censored_packets_mask = np.logical_or(df["isPacket"] == 2, df['pl_db'] > PL_THRESHOLD).values
-            print(F" Found {len(censored_packets_mask)} censored packets.")
-            uncensored_packets_mask = np.invert(censored_packets_mask)
-
-            df.loc[censored_packets_mask, "isPacket"] = 0
-            df.loc[censored_packets_mask, "pl_db"] = PL_THRESHOLD
-
-            num_censored_packets = censored_packets_mask.sum()
-            print(F"{num_censored_packets} detected {num_censored_packets * 100 / util.numberOfRows(df):.2f}%")
-
-            df = df[df["distance"] > 1]
-
-            x = np.column_stack((np.ones((util.numberOfRows(df), 1)), 10 * np.log10(df["distance"])))
-            x = np.asmatrix(x)
-            y = df["pl_db"].values
-            c = PL_THRESHOLD
-            d = df["distance"].values
+        df = data[measurement]["data"]
+        d = df["distance"].values
+        censored_packets_mask = data[measurement]["censored_packets_mask"]
+        uncensored_packets_mask = np.invert(censored_packets_mask)
 
         t = censored_packets_mask
         t_matlab = uncensored_packets_mask * 1
 
         mat_file = F'censored_data_{measurement}_with_weights.mat'
-        sio.savemat(mat_file, {'y': y, 't': t_matlab, 'c': c, 'x': x, 'd': d})
+        sio.savemat(mat_file, {'y': y, 't': t_matlab, 'c': c, 'd': d, 'x':x})
         (PLd0_ols, n_ols, sigma_ols, PLd0_ml, n_ml, sigma_ml, PLd0_est, n_est,
          sigma_est) = eng.compute_path_loss_with_weights(mat_file,
                                                          nargout=9)

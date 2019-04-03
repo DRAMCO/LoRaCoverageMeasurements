@@ -130,39 +130,4 @@ with open(os.path.join(path_to_measurements, "measurements.json")) as f:
             "df_uncensored": df.loc[uncensored_packets_mask]
         }
 
-        #if measurement == "seaside":
-#
-        #    df = pd.read_pickle(input_file_path)
-        #    df = df[df.isPacket > 0]  # censored and uncensored packets
-        #    print(F"Max. Path Loss = {df['pl_db'].max()}")
-#
-        #    ht = 1.75  # m
-        #    hr = 1.75
-        #    wavelength = scipy.constants.speed_of_light/(868*10**6)
-        #    dc = (4*ht*hr)/wavelength
-#
-        #    df = df[df["distance"] > dc]
-#
-        #    censored_packets_mask = np.logical_or(df["isPacket"] == 2, df['pl_db'] > PL_THRESHOLD).values
-        #    print(F" Found {len(censored_packets_mask)} censored packets.")
-        #    uncensored_packets_mask = np.invert(censored_packets_mask)
-#
-        #    df.loc[censored_packets_mask, "isPacket"] = 0
-        #    df.loc[censored_packets_mask, "pl_db"] = PL_THRESHOLD
-#
-        #    num_censored_packets = censored_packets_mask.sum()
-        #    print(F"{num_censored_packets} detected {num_censored_packets * 100 / util.numberOfRows(df):.2f}%")
-#
-        #    x = np.column_stack((np.ones((util.numberOfRows(df), 1)), 40 * np.log10(df["distance"].values)))
-        #    x = np.asmatrix(x)
-        #    y = df["pl_db"].values
-        #    c = PL_THRESHOLD
-#
-        #    t = censored_packets_mask
-        #    t_matlab = uncensored_packets_mask * 1
-#
-        #    sio.savemat(F'censored_data_{measurement}.mat', {'y': y, 't': t_matlab, 'c': c, 'x': x})
-        #    (a_est, sigma_ols, thetahat, sqrt_Avarhat) = eng.compute_path_loss_2ray(F'censored_data_{measurement}.mat',
-        #                                                                            nargout=4)
-#
         pickle.dump(result, open(output_file_path, "wb"))

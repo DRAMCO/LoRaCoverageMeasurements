@@ -1,8 +1,20 @@
-function pars=censoredml_with_weights(d,y,c,t,PL0,n,sigma)
+function pars=censoredml_with_weights(d,y,c,t,PL0,n,sigma, how)
 
   opts = optimset('GradObj','off', 'Largescale','off','MaxFunEvals',20000,'MaxIter',20000);
-  N = 30;
-  [count,edges, bin] = histcounts(d,N);
+  N = 100;
+  switch how
+    case 'linear'
+        x = d;
+     case 'log'
+        x = log10(d);
+     case 'square'
+       x = d.^2;
+     otherwise
+        warning('Unexpected scale')
+  end
+
+  [count,edges, bin] = histcounts(x,N);
+
   Nb = count(bin);
   Ns = numel(d);
   w = ((1./Nb).*(Ns./N))';
